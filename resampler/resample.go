@@ -1,4 +1,4 @@
-// Package resample defines the Resampler interface and provides multiple implementations.
+// Package resample provides the Resampler interface and related types.
 //
 // Resamplers are responsible for rendering a note given an input voice sample and
 // resampling parameters (pitch, velocity, etc.). It has nothing to do with sample rate conversion;
@@ -6,7 +6,7 @@
 //
 // Some resamplers are also capable of analysis and using per-voice sample analysis sidecar files
 // (e.g. .frq) for caching F0/spectral features and improving resampling speed. These resamplers implement the [Analyzer] interface.
-package resample
+package resampler
 
 import (
 	"io"

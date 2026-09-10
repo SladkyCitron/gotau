@@ -13,14 +13,14 @@ import (
 	"strings"
 
 	"github.com/SladkyCitron/gotau/pitch"
-	"github.com/SladkyCitron/gotau/resample"
+	"github.com/SladkyCitron/gotau/resampler"
 	"github.com/SladkyCitron/resona/afmt"
 	"github.com/SladkyCitron/resona/aio"
 	"github.com/SladkyCitron/resona/codec/wav"
 	"github.com/zeebo/xxh3"
 )
 
-var _ resample.Analyzer = (*Resampler)(nil)
+var _ resampler.Analyzer = (*Resampler)(nil)
 
 // Resampler is a resampler that uses an external command-line UTAU resampler program to perform resampling.
 type Resampler struct {
@@ -46,7 +46,7 @@ func (r *Resampler) ID() string {
 	return fmt.Sprintf("external:%s:%s", r.cmdName, r.analysisExt)
 }
 
-func (r *Resampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
+func (r *Resampler) Resample(in aio.SampleReader, cfg resampler.ResampleConfig) (aio.SampleReader, error) {
 	input, err := r.createTempWav(in, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("external: failed to create temporary wav file: %w", err)
@@ -70,7 +70,7 @@ func (r *Resampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (
 	return out, nil
 }
 
-func (r *Resampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
+func (r *Resampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader, cfg resampler.ResampleConfig) (aio.SampleReader, error) {
 	if analysis == nil {
 		return r.Resample(in, cfg)
 	}
@@ -170,7 +170,7 @@ func (r *Resampler) AnalysisExt() string {
 	return r.analysisExt
 }
 
-func (r *Resampler) runCmd(input, output string, cfg resample.ResampleConfig) error {
+func (r *Resampler) runCmd(input, output string, cfg resampler.ResampleConfig) error {
 	flags := "?"
 	if len(cfg.Flags) > 0 {
 		flags = cfg.Flags.String()
@@ -202,7 +202,7 @@ func (r *Resampler) runCmd(input, output string, cfg resample.ResampleConfig) er
 	return nil
 }
 
-func (r *Resampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConfig) (string, error) {
+func (r *Resampler) createTempWav(in aio.SampleReader, cfg resampler.ResampleConfig) (string, error) {
 	// create filename
 	h := xxh3.New()
 	_, _ = h.WriteString(r.cmdName)

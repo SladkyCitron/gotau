@@ -6,12 +6,12 @@ import (
 	"io/fs"
 
 	"github.com/SladkyCitron/gotau/cache"
-	"github.com/SladkyCitron/gotau/resample"
+	"github.com/SladkyCitron/gotau/resampler"
 )
 
 const keyVersion uint64 = 1
 
-func (s *Synth) getKeyFunc(cfg resample.ResampleConfig, path string, fileinfo fs.FileInfo) cache.KeyFunc {
+func (s *Synth) getKeyFunc(cfg resampler.ResampleConfig, path string, fileinfo fs.FileInfo) cache.KeyFunc {
 	mtime, err := fileinfo.ModTime().MarshalBinary()
 	if err != nil {
 		mtime = []byte{}
@@ -23,7 +23,7 @@ func (s *Synth) getKeyFunc(cfg resample.ResampleConfig, path string, fileinfo fs
 	}
 
 	return func(w io.Writer) {
-		_, _ = w.Write([]byte("gotau-resample"))
+		_, _ = w.Write([]byte("gotau-resampler"))
 		_ = binary.Write(w, binary.LittleEndian, keyVersion)
 		_, _ = w.Write([]byte(s.res.ID()))
 		_, _ = w.Write([]byte(path))

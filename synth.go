@@ -15,7 +15,7 @@ import (
 	"github.com/SladkyCitron/gotau/cache"
 	"github.com/SladkyCitron/gotau/concat"
 	"github.com/SladkyCitron/gotau/phonemizer"
-	"github.com/SladkyCitron/gotau/resample"
+	"github.com/SladkyCitron/gotau/resampler"
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"github.com/SladkyCitron/gotau/voicebank/otoini"
@@ -32,7 +32,7 @@ import (
 type Synth struct {
 	vb        *voicebank.Voicebank
 	ph        phonemizer.Phonemizer
-	res       resample.Resampler
+	res       resampler.Resampler
 	cat       concat.Concatenator
 	resCache  cache.Cache
 	sched     *scheduler
@@ -43,7 +43,7 @@ type Synth struct {
 }
 
 // New creates a new [Synth] with the given sample rate, voicebank, resampler, and concatenator.
-func New(sr int, vb *voicebank.Voicebank, res resample.Resampler, cat concat.Concatenator) *Synth {
+func New(sr int, vb *voicebank.Voicebank, res resampler.Resampler, cat concat.Concatenator) *Synth {
 	s := &Synth{
 		vb:        vb,
 		ph:        &phonemizer.Default{},
@@ -279,7 +279,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 		pitchBend[i] = pitch
 	}
 
-	resampleCfg := resample.ResampleConfig{
+	resampleCfg := resampler.ResampleConfig{
 		Pitch:    note.Note,
 		Velocity: note.Velocity,
 		Flags:    note.Flags,
@@ -325,7 +325,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 			return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rates do not match", sr, s.sr)
 		}
 
-		if analyzer, ok := s.res.(resample.Analyzer); ok {
+		if analyzer, ok := s.res.(resampler.Analyzer); ok {
 			// check if there's the analysis sidecar file available
 			ext := filepath.Ext(otoEntry.FilePath())
 			name := otoEntry.FilePath()[:len(otoEntry.FilePath())-len(ext)]
