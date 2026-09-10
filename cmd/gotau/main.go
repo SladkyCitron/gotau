@@ -95,7 +95,7 @@ func main() {
 		//cmd.Stderr = os.Stderr
 	}
 	synth := gotau.New(44100, vb, res, cat)
-	synth.SetPhonemizer(&phonemizer.JapaneseVCV{})
+	synth.SetPhonemizer(&phonemizer.Default{})
 	cacheDir, _ := diskcache.Dir(gotau.ResamplerDiskCacheDir)
 	synth.SetResamplerCache(diskcache.New(cacheDir, gotau.ResamplerDiskCacheExt))
 	synth.EnqueueSequence(seq)
