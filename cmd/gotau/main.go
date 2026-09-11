@@ -17,7 +17,7 @@ import (
 	"github.com/SladkyCitron/gotau/cache/diskcache"
 	external_cat "github.com/SladkyCitron/gotau/concat/external"
 	"github.com/SladkyCitron/gotau/phonemizer"
-	"github.com/SladkyCitron/gotau/resample/external"
+	"github.com/SladkyCitron/gotau/resampler/external"
 	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"golang.org/x/text/encoding/japanese"
