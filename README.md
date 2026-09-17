@@ -16,7 +16,7 @@
   <img src="https://raw.githubusercontent.com/pedromxavier/flag-badges/refs/heads/main/badges/SK.svg" alt="Made in Slovakia" />
 </p>
 
-**GoTAU** (pronounced _Go UTAU_) is a work-in-progress modern UTAU-compatible singing voice synthesizer written in Go.
+**GoTAU** is a work-in-progress modern UTAU-compatible singing voice synthesizer written in Go.
 It's designed to be fast, modern, modular, and easy to use, while staying backwards compatible with the existing UTAU ecosystem.
 
 Built with ❤️ for the vocal synth community.
@@ -55,7 +55,8 @@ Also, I just really like Go and singing voice synthesis tech and wanted to see i
 
 ## 📖 The name
 
-The name "GoTAU" is a portmanteau of "Go" and "UTAU", pronounced "Go UTAU".
+The name "GoTAU" is a portmanteau of "Go" and "UTAU".
+It is pronounced as a single word: "GoTAU".
 
 ## ⚖️ License
 
