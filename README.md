@@ -6,7 +6,15 @@
   </picture>
 </p>
 
-[![CI (Go)](https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml/badge.svg)](https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml) [![GitHub license](https://img.shields.io/github/license/SladkyCitron/gotau)](LICENSE) ![Made in Slovakia](https://raw.githubusercontent.com/pedromxavier/flag-badges/refs/heads/main/badges/SK.svg)
+<p align="center">
+  <a href="https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml">
+    <img src="https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml/badge.svg" alt="CI (Go)" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/SladkyCitron/gotau" alt="GitHub license" />
+  </a>
+  <img src="https://raw.githubusercontent.com/pedromxavier/flag-badges/refs/heads/main/badges/SK.svg" alt="Made in Slovakia" />
+</p>
 
 **GoTAU** (pronounced _Go UTAU_) is a work-in-progress modern UTAU-compatible singing voice synthesizer written in Go.
 It's designed to be fast, modern, modular, and easy to use, while staying backwards compatible with the existing UTAU ecosystem.
