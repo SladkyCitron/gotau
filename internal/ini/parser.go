@@ -59,10 +59,13 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 	}
 
 	lineNum := 1
+	var curSection *Section
+	var rawBuf bytes.Buffer
+	rawBuf.Grow(len(data))
 	for line := range bytes.SplitSeq(data, []byte{'\n'}) {
 		origLine := bytes.TrimSuffix(line, []byte{'\r'})
 
-		curSection := &doc.Sections[len(doc.Sections)-1]
+		curSection = &doc.Sections[len(doc.Sections)-1]
 
 		line = bytes.TrimSpace(origLine)
 
@@ -97,6 +100,12 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 				}
 			}
 
+			// Dump raw content of the previous section if it was unparseable
+			if slices.Contains(opts.UnparseableSections, curSection.Name) {
+				curSection.Raw = rawBuf.String()
+				rawBuf.Reset()
+			}
+
 			doc.Sections = append(doc.Sections, Section{
 				Name: string(sectionName),
 			})
@@ -105,8 +114,8 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 		}
 
 		if slices.Contains(opts.UnparseableSections, curSection.Name) {
-			// TODO: use strings.Builder for this
-			curSection.Raw += string(origLine) + "\n"
+			rawBuf.Write(origLine)
+			rawBuf.WriteByte('\n')
 			lineNum++
 			continue
 		}
@@ -155,6 +164,10 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 		curSection.Entries = append(curSection.Entries, Entry{Key: string(key), Value: string(value)})
 
 		lineNum++
+	}
+	// Dump raw content of the previous section if it was unparseable one last time
+	if slices.Contains(opts.UnparseableSections, curSection.Name) {
+		curSection.Raw = rawBuf.String()
 	}
 	return doc, nil
 }
