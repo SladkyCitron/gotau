@@ -192,3 +192,36 @@ func TestParseErrors(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkParse(b *testing.B) {
+	data := []byte(`
+; This is a comment
+  foo=42
+
+[section]
+bar  =39
+baz=  hello world
+quotes = "some \"quotes\""
+
+[ unparseable ]
+Some unparseable INI data
+; Another comment
+Without key-value pairs
+`)
+	opts := ini.ParseOptions{
+		CommentPrefix:             ";",
+		UnparseableSections:       []string{"unparseable"},
+		UnescapeValueDoubleQuotes: true,
+	}
+
+	b.ReportAllocs()
+	b.SetBytes(int64(len(data)))
+	b.ResetTimer()
+
+	for b.Loop() {
+		_, err := ini.Parse(data, opts)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
