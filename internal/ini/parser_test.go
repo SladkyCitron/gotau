@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseFullDocument(t *testing.T) {
-	data := `
+	data := []byte(`
 ; This is a comment
   foo=42
 
@@ -21,7 +21,7 @@ quotes = "some \"quotes\""
 Some unparseable INI data
 ; Another comment
 Without key-value pairs
-`
+`)
 	want := &ini.Document{
 		Sections: []ini.Section{
 			{Name: "", Entries: []ini.Entry{
@@ -38,7 +38,7 @@ Without key-value pairs
 		},
 	}
 
-	got, err := ini.Parse([]byte(data), ini.ParseOptions{
+	got, err := ini.Parse(data, ini.ParseOptions{
 		CommentPrefix:             ";",
 		UnparseableSections:       []string{"unparseable"},
 		UnescapeValueDoubleQuotes: true,
@@ -51,7 +51,7 @@ Without key-value pairs
 func TestParse(t *testing.T) {
 	tests := []struct {
 		name string
-		data string
+		data []byte
 		opts ini.ParseOptions
 		want *ini.Document
 	}{
@@ -61,7 +61,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "values may be empty or contain equals signs",
-			data: "empty=\nexpression=a=b=c",
+			data: []byte("empty=\nexpression=a=b=c"),
 			want: &ini.Document{
 				Sections: []ini.Section{{
 					Name: "",
@@ -74,7 +74,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "whitespace and comments are ignored",
-			data: " \t ; comment\r\n\t[ section ] \r\n key \t = \t value \r\n",
+			data: []byte(" \t ; comment\r\n\t[ section ] \r\n key \t = \t value \r\n"),
 			opts: ini.ParseOptions{CommentPrefix: ";"},
 			want: &ini.Document{
 				Sections: []ini.Section{
@@ -85,7 +85,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "comment prefix can be changed",
-			data: "# comment\nkey=value",
+			data: []byte("# comment\nkey=value"),
 			opts: ini.ParseOptions{CommentPrefix: "#"},
 			want: &ini.Document{
 				Sections: []ini.Section{{
@@ -96,7 +96,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "quoted values retain escapes when unescaping is disabled",
-			data: `value = "a \"quoted\" value"`,
+			data: []byte(`value = "a \"quoted\" value"`),
 			want: &ini.Document{
 				Sections: []ini.Section{{
 					Name:    "",
@@ -106,7 +106,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "unparseable section preserves non-entry lines",
-			data: "[raw]\r\n first line \r\nsecond line\r\n",
+			data: []byte("[raw]\r\n first line \r\nsecond line\r\n"),
 			opts: ini.ParseOptions{UnparseableSections: []string{"raw"}},
 			want: &ini.Document{
 				Sections: []ini.Section{
@@ -119,7 +119,7 @@ func TestParse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ini.Parse([]byte(tt.data), tt.opts)
+			got, err := ini.Parse(tt.data, tt.opts)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
@@ -129,55 +129,55 @@ func TestParse(t *testing.T) {
 func TestParseErrors(t *testing.T) {
 	tests := []struct {
 		name string
-		data string
+		data []byte
 		opts ini.ParseOptions
 		want string
 	}{
 		{
 			name: "invalid entry format",
-			data: "not an entry",
+			data: []byte("not an entry"),
 			want: "1:1: invalid entry format",
 		},
 		{
 			name: "unterminated section",
-			data: "[section",
+			data: []byte("[section"),
 			want: "1:1: unterminated section declaration",
 		},
 		{
 			name: "empty section name",
-			data: "[]",
+			data: []byte("[]"),
 			want: "1:2: empty section name",
 		},
 		{
 			name: "invalid section name",
-			data: "[nested[section]]",
+			data: []byte("[nested[section]]"),
 			want: "1:1: invalid section name",
 		},
 		{
 			name: "empty key",
-			data: "=value",
+			data: []byte("=value"),
 			want: "1:1: empty key",
 		},
 		{
 			name: "unterminated quoted value",
-			data: `key = "value`,
+			data: []byte(`key = "value`),
 			want: "1:7: unterminated quoted value",
 		},
 		{
 			name: "invalid quoted string",
-			data: `key = "\q"`,
+			data: []byte(`key = "\q"`),
 			opts: ini.ParseOptions{UnescapeValueDoubleQuotes: true},
 			want: `1:7: invalid quoted string: invalid syntax`,
 		},
 		{
 			name: "line and column are reported after skipped lines",
-			data: "; comment\n\nbroken",
+			data: []byte("; comment\n\nbroken"),
 			opts: ini.ParseOptions{CommentPrefix: ";"},
 			want: "3:1: invalid entry format",
 		},
 		{
 			name: "empty comment prefix disables comments",
-			data: "; comment",
+			data: []byte("; comment"),
 			opts: ini.ParseOptions{},
 			want: "1:1: invalid entry format",
 		},
@@ -185,7 +185,7 @@ func TestParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ini.Parse([]byte(tt.data), tt.opts)
+			_, err := ini.Parse(tt.data, tt.opts)
 			if assert.Error(t, err) {
 				assert.Equal(t, tt.want, err.Error())
 			}
