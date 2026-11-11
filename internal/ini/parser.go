@@ -59,13 +59,11 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 	}
 
 	lineNum := 1
-	var curSection *Section
+	curSection := &doc.Sections[0]
 	var rawBuf bytes.Buffer
 	rawBuf.Grow(len(data))
 	for line := range bytes.SplitSeq(data, []byte{'\n'}) {
 		origLine := bytes.TrimSuffix(line, []byte{'\r'})
-
-		curSection = &doc.Sections[len(doc.Sections)-1]
 
 		line = bytes.TrimSpace(origLine)
 
@@ -109,6 +107,7 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 			doc.Sections = append(doc.Sections, Section{
 				Name: string(sectionName),
 			})
+			curSection = &doc.Sections[len(doc.Sections)-1]
 			lineNum++
 			continue
 		}
