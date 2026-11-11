@@ -12,6 +12,7 @@ import (
 
 	_ "image/png"
 
+	"github.com/SladkyCitron/gotau/internal/ini"
 	"github.com/SladkyCitron/gotau/voicebank/otoini"
 	"github.com/SladkyCitron/resona/codec"
 	_ "github.com/SladkyCitron/resona/codec/au"
@@ -20,7 +21,6 @@ import (
 	_ "golang.org/x/image/bmp"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
-	"gopkg.in/ini.v1"
 )
 
 // InstallInfo represents metadata about installer voicebanks (i.e. install.txt).
@@ -325,24 +325,26 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 }
 
 func parseInstallInfo(fsys fs.FS, enc encoding.Encoding) (*InstallInfo, error) {
-	f, err := fsys.Open("install.txt")
+	data, err := fs.ReadFile(fsys, "install.txt")
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	newReader := transform.NewReader(f, enc.NewDecoder())
-
-	iniFile, err := ini.Load(newReader)
+	newData, err := enc.NewDecoder().Bytes(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse ini: %w", err)
+		return nil, fmt.Errorf("failed to decode install.txt: %w", err)
+	}
+
+	iniDoc, err := ini.Parse(newData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse install.txt: %w", err)
 	}
 
 	return &InstallInfo{
-		Type:        iniFile.Section("DEFAULT").Key("type").String(),
-		Folder:      iniFile.Section("DEFAULT").Key("folder").String(),
-		ContentsDir: iniFile.Section("DEFAULT").Key("contentsdir").String(),
-		Description: iniFile.Section("DEFAULT").Key("description").String(),
+		Type:        iniDoc.GetDefaultSection().Get("type").Value,
+		Folder:      iniDoc.GetDefaultSection().Get("folder").Value,
+		ContentsDir: iniDoc.GetDefaultSection().Get("contentsdir").Value,
+		Description: iniDoc.GetDefaultSection().Get("description").Value,
 	}, nil
 }
 
