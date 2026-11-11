@@ -90,7 +90,7 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 				}
 			}
 
-			if bytes.Contains(sectionName, []byte{'['}) || bytes.Contains(sectionName, []byte{']'}) {
+			if bytes.IndexByte(sectionName, '[') != 1 || bytes.IndexByte(sectionName, ']') != 1 {
 				return nil, &ParseError{
 					Line:   lineNum,
 					Column: 1,
