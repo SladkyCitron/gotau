@@ -3,8 +3,6 @@ package ust
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,46 +21,38 @@ func sectionValue(sec ini.Section, key string) string {
 	return ""
 }
 
-// Decode decodes a UST file.
-func Decode(r io.Reader) (file *File, _ error) {
-	// detect encoding, step 1: sniff
+// Parse parses a UST file.
+func Parse(data []byte) (file *File, _ error) {
+	// detect encoding
 	const sniffLen = 256
-	buf := make([]byte, sniffLen)
-	n, err := r.Read(buf)
-	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("failed to read UST file for encoding detection: %w", err)
-	}
-
-	// step 2: find charset in the sniff
 	_charset := "shift_jis" // default
-	for line := range strings.SplitSeq(string(buf[:n]), "\n") {
-		if strings.Contains(line, "Charset=") {
-			parts := strings.SplitN(line, "=", 2)
+	for line := range bytes.SplitSeq(data[:sniffLen], []byte{'\n'}) {
+		if bytes.Contains(line, []byte("Charset=")) {
+			parts := bytes.SplitN(line, []byte{'='}, 2)
 			if len(parts) == 2 {
-				_charset = strings.TrimSpace(parts[1])
+				_charset = string(bytes.TrimSpace(parts[1]))
 			}
 			break
 		}
 	}
 
-	concatReader := io.MultiReader(bytes.NewReader(buf[:n]), r)
-
-	// step 3: transcode to UTF-8
-	newReader := concatReader
-	lc := strings.ToLower(strings.TrimSpace(_charset))
+	lc := strings.ToLower(_charset)
 	if lc != "" && lc != "utf-8" && lc != "utf8" {
-		dec, err := charset.NewReaderLabel(lc, concatReader)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create decoder for charset %s: %w", strconv.Quote(_charset), err)
+		enc, _ := charset.Lookup(lc)
+		if enc == nil {
+			return nil, fmt.Errorf("unsupported charset: %s", _charset)
 		}
-		newReader = dec
+		data, err := enc.NewDecoder().Bytes(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode UST file: %w", err)
+		}
+		return parse(data)
 	}
 
-	data, err := io.ReadAll(newReader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read UST file: %w", err)
-	}
+	return parse(data)
+}
 
+func parse(data []byte) (*File, error) {
 	iniDoc, err := ini.Parse(data, ini.ParseOptions{
 		UnparseableSections: []string{"#VERSION"},
 	})
@@ -70,7 +60,7 @@ func Decode(r io.Reader) (file *File, _ error) {
 		return nil, fmt.Errorf("failed to parse UST file: %w", err)
 	}
 
-	file = &File{iniDoc: iniDoc}
+	file := &File{iniDoc: iniDoc}
 
 	for _, sec := range file.iniDoc.Sections {
 		switch sec.Name {
@@ -92,7 +82,7 @@ func Decode(r io.Reader) (file *File, _ error) {
 					return nil, fmt.Errorf("failed to parse note %s: %w", sec.Name, err)
 				}
 			} else {
-				slog.Warn("invalid section, skipping", "name", sec.Name)
+				//slog.Warn("invalid section, skipping", "name", sec.Name)
 				continue
 			}
 		}

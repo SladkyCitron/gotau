@@ -1,7 +1,6 @@
 package voicebank
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -85,8 +84,8 @@ func PrefixMapWithNoteFormat(notefmt NoteFormat) PrefixMapOption {
 	}
 }
 
-// DecodePrefixMap parses and decodes a prefix.map file from the provided reader.
-func DecodePrefixMap(r io.Reader, opts ...PrefixMapOption) (PrefixMap, error) {
+// ParsePrefixMap parses and decodes a prefix.map file.
+func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 	cfg := &prefixMapConfig{
 		encoding:  encoding.Nop,
 		delimiter: '\t',
@@ -97,31 +96,34 @@ func DecodePrefixMap(r io.Reader, opts ...PrefixMapOption) (PrefixMap, error) {
 		opt(cfg)
 	}
 
-	scan := bufio.NewScanner(transform.NewReader(r, cfg.encoding.NewDecoder()))
+	newData, err := cfg.encoding.NewDecoder().Bytes(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode prefix.map: %w", err)
+	}
 
 	prefixMap := make(PrefixMap)
-	for scan.Scan() {
-		line := scan.Text()
-		if cfg.comment != 0 && strings.HasPrefix(strings.TrimSpace(line), string(cfg.comment)) {
+	for line := range bytes.SplitSeq(newData, []byte{'\n'}) {
+		line = bytes.TrimSuffix(line, []byte(`\r`))
+		if len(line) == 0 || cfg.comment != 0 && bytes.HasPrefix(bytes.TrimSpace(line), []byte(string(cfg.comment))) {
 			continue
 		}
 
-		parts := strings.SplitN(line, string(cfg.delimiter), 3)
+		parts := bytes.SplitN(line, []byte(string(cfg.delimiter)), 3)
 		if len(parts) < 3 {
 			return nil, fmt.Errorf("voicebank prefix.map: invalid line: %q", line)
 		}
 
-		note, err := parseNote(strings.TrimSpace(parts[0]))
+		note, err := parseNote(string(bytes.TrimSpace(parts[0])))
 		if err != nil {
 			return nil, fmt.Errorf("voicebank prefix.map: invalid note %q: %w", parts[0], err)
 		}
 
 		prefixMap[note] = Prefix{
-			Prefix: strings.TrimSpace(parts[1]),
-			Suffix: strings.TrimSpace(parts[2]),
+			Prefix: string(bytes.TrimSpace(parts[1])),
+			Suffix: string(bytes.TrimSpace(parts[2])),
 		}
 	}
-	return prefixMap, scan.Err()
+	return prefixMap, nil
 }
 
 // we use A-H to support German notation; H means B natural

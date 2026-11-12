@@ -24,8 +24,6 @@ import (
 )
 
 func main() {
-	// miku
-
 	if len(os.Args) != 4 {
 		fmt.Fprintf(os.Stderr, "Usage: %s voicebank.zip song.ust output.wav", os.Args[0])
 		os.Exit(1)
@@ -62,17 +60,12 @@ func main() {
 
 	println("loading UST")
 
-	inFile, err := os.Open(os.Args[2])
+	inFile, err := os.ReadFile(os.Args[2])
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		if err := inFile.Close(); err != nil {
-			panic(err)
-		}
-	}()
 
-	ustFile, err := ust.Decode(inFile)
+	ustFile, err := ust.Parse(inFile)
 	if err != nil {
 		panic(err)
 	}
