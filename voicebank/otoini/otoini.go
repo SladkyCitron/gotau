@@ -2,7 +2,6 @@
 package otoini
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -10,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SladkyCitron/gotau/internal/ini"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
 )
@@ -106,84 +106,82 @@ func Decode(r io.Reader, opts ...Option) (Oto, error) {
 		opt(cfg)
 	}
 
-	// we can't use ini package here because oto.ini contains
-	// duplicate keys (i.e. filenames) which ini would reject
-
-	scan := bufio.NewScanner(transform.NewReader(r, cfg.encoding.NewDecoder()))
+	data, err := io.ReadAll(transform.NewReader(r, cfg.encoding.NewDecoder()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read oto.ini: %w", err)
+	}
+	iniDoc, err := ini.Parse(data, ini.ParseOptions{
+		CommentPrefix: string(cfg.comment),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse oto.ini: %w", err)
+	}
 
 	var oto Oto
-	for scan.Scan() {
-		line := scan.Text()
-		if cfg.comment != 0 && strings.HasPrefix(strings.TrimSpace(line), string(cfg.comment)) {
-			continue
-		}
+	for _, section := range iniDoc.Sections {
+		for _, entry := range section.Entries {
+			filename := entry.Key
+			values := strings.Split(entry.Value, ",")
 
-		filename, _values, ok := strings.Cut(line, "=")
-		if !ok {
-			return oto, fmt.Errorf("invalid oto entry: %s", strconv.Quote(line))
-		}
-		values := strings.Split(_values, ",")
+			if len(values) != 6 {
+				return nil, fmt.Errorf("invalid oto entry for %s, expected 6 values, got %d", strconv.Quote(filename), len(values))
+			}
 
-		// filename=alias,offset,consonant,cutoff,preutter,overlap
-		// filename and alias are strings, the rest are floats
-		if len(values) != 6 {
-			return oto, fmt.Errorf("invalid oto entry for %s, expected 6 values, got %d", strconv.Quote(filename), len(values))
-		}
+			alias := values[0]
 
-		alias := values[0]
+			if values[1] == "" {
+				values[1] = "0"
+			}
+			offset, err := strconv.ParseFloat(values[1], 64)
+			if err != nil {
+				return oto, fmt.Errorf("failed to parse offset value for %s: %w", strconv.Quote(filename), err)
+			}
 
-		if values[1] == "" {
-			values[1] = "0"
-		}
-		offset, err := strconv.ParseFloat(values[1], 64)
-		if err != nil {
-			return oto, fmt.Errorf("failed to parse offset value for %s: %w", strconv.Quote(filename), err)
-		}
+			if values[2] == "" {
+				values[2] = "0"
+			}
+			consonant, err := strconv.ParseFloat(values[2], 64)
+			if err != nil {
+				return oto, fmt.Errorf("failed to parse consonant value for %s: %w", strconv.Quote(filename), err)
+			}
 
-		if values[2] == "" {
-			values[2] = "0"
-		}
-		consonant, err := strconv.ParseFloat(values[2], 64)
-		if err != nil {
-			return oto, fmt.Errorf("failed to parse consonant value for %s: %w", strconv.Quote(filename), err)
-		}
+			if values[3] == "" {
+				values[3] = "0"
+			}
+			cutoff, err := strconv.ParseFloat(values[3], 64)
+			if err != nil {
+				return oto, fmt.Errorf("failed to parse cutoff value for %s: %w", strconv.Quote(filename), err)
+			}
 
-		if values[3] == "" {
-			values[3] = "0"
-		}
-		cutoff, err := strconv.ParseFloat(values[3], 64)
-		if err != nil {
-			return oto, fmt.Errorf("failed to parse cutoff value for %s: %w", strconv.Quote(filename), err)
-		}
+			if values[4] == "" {
+				values[4] = "0"
+			}
+			preutter, err := strconv.ParseFloat(values[4], 64)
+			if err != nil {
+				return oto, fmt.Errorf("failed to parse preutterance value for %s: %w", strconv.Quote(filename), err)
+			}
 
-		if values[4] == "" {
-			values[4] = "0"
-		}
-		preutter, err := strconv.ParseFloat(values[4], 64)
-		if err != nil {
-			return oto, fmt.Errorf("failed to parse preutterance value for %s: %w", strconv.Quote(filename), err)
-		}
+			if values[5] == "" {
+				values[5] = "0"
+			}
+			overlap, err := strconv.ParseFloat(values[5], 64)
+			if err != nil {
+				return oto, fmt.Errorf("failed to parse overlap value for %s: %w", strconv.Quote(filename), err)
+			}
 
-		if values[5] == "" {
-			values[5] = "0"
+			oto = append(oto, Entry{
+				Filename:     filename,
+				Directory:    cfg.dir,
+				Alias:        alias,
+				Offset:       offset,
+				Consonant:    consonant,
+				Cutoff:       cutoff,
+				Preutterance: preutter,
+				Overlap:      overlap,
+			})
 		}
-		overlap, err := strconv.ParseFloat(values[5], 64)
-		if err != nil {
-			return oto, fmt.Errorf("failed to parse overlap value for %s: %w", strconv.Quote(filename), err)
-		}
-
-		oto = append(oto, Entry{
-			Filename:     filename,
-			Directory:    cfg.dir,
-			Alias:        alias,
-			Offset:       offset,
-			Consonant:    consonant,
-			Cutoff:       cutoff,
-			Preutterance: preutter,
-			Overlap:      overlap,
-		})
 	}
-	return oto, scan.Err()
+	return oto, nil
 }
 
 // Get retrieves an [Entry] by its phoneme alias.
