@@ -3,7 +3,6 @@ package otoini_test
 import (
 	"bytes"
 	"io"
-	"strings"
 	"testing"
 
 	"github.com/SladkyCitron/gotau/voicebank/otoini"
@@ -12,13 +11,13 @@ import (
 )
 
 func TestDecodeOto(t *testing.T) {
-	src := `; example oto.ini for parser tests
+	src := []byte(`; example oto.ini for parser tests
 a.wav=a,0,120,-39,80,20
 shi.wav=し,10,90,-200,70,25
 ka.wav=か,50,100,-300,90,30
 あ.wav=あ,39,110,-250,85,40
 empty_values.wav=a,,,,,
-`
+`)
 	want := otoini.Oto{
 		{"a.wav", "", "a", 0, 120, -39, 80, 20},
 		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
@@ -27,7 +26,7 @@ empty_values.wav=a,,,,,
 		{"empty_values.wav", "", "a", 0, 0, 0, 0, 0},
 	}
 
-	oto, err := otoini.Decode(strings.NewReader(src), otoini.WithComment(';'))
+	oto, err := otoini.Parse(src, otoini.WithComment(';'))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +35,7 @@ empty_values.wav=a,,,,,
 }
 
 func TestDecodeOtoShiftJIS(t *testing.T) {
-	src := "shi.wav=\x82\xb5,10,90,-200,70,25\nka.wav=\x82\xa9,50,100,-300,90,30\n\x82\xa0.wav=\x82\xa0,39,110,-250,85,40\n"
+	src := []byte("shi.wav=\x82\xb5,10,90,-200,70,25\nka.wav=\x82\xa9,50,100,-300,90,30\n\x82\xa0.wav=\x82\xa0,39,110,-250,85,40\n")
 
 	want := otoini.Oto{
 		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
@@ -44,7 +43,7 @@ func TestDecodeOtoShiftJIS(t *testing.T) {
 		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
-	oto, err := otoini.Decode(strings.NewReader(src), otoini.WithEncoding(japanese.ShiftJIS))
+	oto, err := otoini.Parse(src, otoini.WithEncoding(japanese.ShiftJIS))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,17 +52,17 @@ func TestDecodeOtoShiftJIS(t *testing.T) {
 }
 
 func TestDecodeOtoInvalid(t *testing.T) {
-	src := "invalid_entry.wav=a,\n"
+	src := []byte("invalid_entry.wav=a,\n")
 
-	oto, err := otoini.Decode(strings.NewReader(src))
+	oto, err := otoini.Parse(src)
 	assert.Error(t, err)
 	assert.Empty(t, oto)
 }
 
 func TestDecodeOtoMissingEqualSign(t *testing.T) {
-	src := "invalid_entry.wav\n"
+	src := []byte("invalid_entry.wav\n")
 
-	oto, err := otoini.Decode(strings.NewReader(src))
+	oto, err := otoini.Parse(src)
 	assert.Error(t, err)
 	assert.Empty(t, oto)
 }
@@ -93,10 +92,10 @@ func TestOtoEncode(t *testing.T) {
 		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
-	want := `shi.wav=し,10,90,-200,70,25
+	want := []byte(`shi.wav=し,10,90,-200,70,25
 ka.wav=か,50,100,-300,90,30
 あ.wav=あ,39,110,-250,85,40
-`
+`)
 
 	var buf bytes.Buffer
 	err := oto.Encode(&buf)
@@ -104,7 +103,7 @@ ka.wav=か,50,100,-300,90,30
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, want, buf.String())
+	assert.Equal(t, want, buf.Bytes())
 }
 
 func TestOtoEncodeWithPrecision(t *testing.T) {
@@ -114,10 +113,10 @@ func TestOtoEncodeWithPrecision(t *testing.T) {
 		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
-	want := `shi.wav=し,10.000,90.000,-200.000,70.000,25.000
+	want := []byte(`shi.wav=し,10.000,90.000,-200.000,70.000,25.000
 ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 あ.wav=あ,39.000,110.000,-250.000,85.000,40.000
-`
+`)
 
 	var buf bytes.Buffer
 	err := oto.Encode(&buf, otoini.WithFloatPrecision(3))
@@ -125,17 +124,17 @@ ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, want, buf.String())
+	assert.Equal(t, want, buf.Bytes())
 }
 
 func TestOtoRoundTrip(t *testing.T) {
-	src := `a.wav=a,0.000,120.000,-39.000,80.000,20.000
+	src := []byte(`a.wav=a,0.000,120.000,-39.000,80.000,20.000
 shi.wav=し,10.000,90.000,-200.000,70.000,25.000
 ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 あ.wav=あ,39.000,110.000,-250.000,85.000,40.000
-`
+`)
 
-	oto, err := otoini.Decode(strings.NewReader(src))
+	oto, err := otoini.Parse(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +145,7 @@ ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, src, buf.String())
+	assert.Equal(t, src, buf.Bytes())
 }
 
 func BenchmarkOtoEncode(b *testing.B) {

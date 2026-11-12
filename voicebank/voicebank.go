@@ -408,13 +408,12 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 }
 
 func parseOtoIni(fsys fs.FS, _path string, enc encoding.Encoding) (otoini.Oto, error) {
-	f, err := fsys.Open(_path)
+	b, err := fs.ReadFile(fsys, _path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	oto, err := otoini.Decode(f, otoini.WithEncoding(enc), otoini.WithDirectory(path.Dir(_path)))
+	oto, err := otoini.Parse(b, otoini.WithEncoding(enc), otoini.WithDirectory(path.Dir(_path)))
 	if err != nil {
 		return nil, err
 	}

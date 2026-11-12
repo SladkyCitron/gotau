@@ -95,8 +95,8 @@ func WithDirectory(dir string) Option {
 	}
 }
 
-// Decode parses and decodes an oto.ini file from the provided [io.Reader].
-func Decode(r io.Reader, opts ...Option) (Oto, error) {
+// Parse parses and decodes an oto.ini file.
+func Parse(data []byte, opts ...Option) (Oto, error) {
 	cfg := &config{
 		encoding: encoding.Nop,
 		comment:  '#',
@@ -106,11 +106,12 @@ func Decode(r io.Reader, opts ...Option) (Oto, error) {
 		opt(cfg)
 	}
 
-	data, err := io.ReadAll(transform.NewReader(r, cfg.encoding.NewDecoder()))
+	newData, err := cfg.encoding.NewDecoder().Bytes(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read oto.ini: %w", err)
+		return nil, fmt.Errorf("failed to decode oto.ini: %w", err)
 	}
-	iniDoc, err := ini.Parse(data, ini.ParseOptions{
+
+	iniDoc, err := ini.Parse(newData, ini.ParseOptions{
 		CommentPrefix: string(cfg.comment),
 	})
 	if err != nil {
