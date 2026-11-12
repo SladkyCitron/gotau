@@ -97,7 +97,7 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 				}
 			}
 
-			if bytes.IndexByte(sectionName, '[') > 0 || bytes.IndexByte(sectionName, ']') > 0 {
+			if bytes.IndexByte(sectionName, '[') >= 0 || bytes.IndexByte(sectionName, ']') >= 0 {
 				return nil, &ParseError{
 					Line:   lineNum,
 					Column: 1,
