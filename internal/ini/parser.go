@@ -118,6 +118,7 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 			continue
 		}
 
+		// The Raw field specifically skips empty lines and comments on purpose, so this is fine
 		if slices.Contains(opts.UnparseableSections, curSection.Name) {
 			rawBuf.Write(origLine)
 			rawBuf.WriteByte('\n')
