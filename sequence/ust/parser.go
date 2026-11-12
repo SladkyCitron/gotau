@@ -64,7 +64,7 @@ func parse(data []byte) (*File, error) {
 
 	for _, sec := range file.iniDoc.Sections {
 		switch sec.Name {
-		case "DEFAULT":
+		case "":
 			continue
 		case "#VERSION":
 			if err := file.parseVersion(sec); err != nil {
