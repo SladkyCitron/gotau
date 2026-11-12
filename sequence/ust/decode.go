@@ -16,6 +16,13 @@ import (
 
 var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)
 
+func sectionValue(sec ini.Section, key string) string {
+	if entry := sec.Get(key); entry != nil {
+		return entry.Value
+	}
+	return ""
+}
+
 // Decode decodes a UST file.
 func Decode(r io.Reader) (file *File, _ error) {
 	// detect encoding, step 1: sniff
@@ -56,10 +63,14 @@ func Decode(r io.Reader) (file *File, _ error) {
 		return nil, fmt.Errorf("failed to read UST file: %w", err)
 	}
 
-	file = &File{}
-	file.iniDoc, err = ini.Parse(data, ini.ParseOptions{
+	iniDoc, err := ini.Parse(data, ini.ParseOptions{
 		UnparseableSections: []string{"#VERSION"},
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse UST file: %w", err)
+	}
+
+	file = &File{iniDoc: iniDoc}
 
 	for _, sec := range file.iniDoc.Sections {
 		switch sec.Name {
@@ -107,22 +118,22 @@ func (f *File) parseVersion(sec ini.Section) error {
 func (f *File) parseSetting(sec ini.Section) (err error) {
 	f.Settings = Settings{}
 
-	tempo, err := strconv.ParseFloat(sec.Get("Tempo").Value, 64) // Tempo
+	tempo, err := strconv.ParseFloat(sectionValue(sec, "Tempo"), 64) // Tempo
 	if err != nil {
 		return fmt.Errorf("failed to parse tempo: %w", err)
 	}
 	f.Settings.Tempo = tempo
 
-	f.Settings.ProjectName = sec.Get("ProjectName").Value // ProjectName
-	f.Settings.Project = sec.Get("Project").Value         // Project (OpenUtau)
-	f.Settings.VoiceDir = sec.Get("VoiceDir").Value       // VoiceDir
-	f.Settings.OutFile = sec.Get("OutFile").Value         // OutFile
-	f.Settings.CacheDir = sec.Get("CacheDir").Value       // CacheDir
-	f.Settings.Tool1 = sec.Get("Tool1").Value             // Tool1
-	f.Settings.Tool2 = sec.Get("Tool2").Value             // Tool2
+	f.Settings.ProjectName = sectionValue(sec, "ProjectName") // ProjectName
+	f.Settings.Project = sectionValue(sec, "Project")         // Project (OpenUtau)
+	f.Settings.VoiceDir = sectionValue(sec, "VoiceDir")       // VoiceDir
+	f.Settings.OutFile = sectionValue(sec, "OutFile")         // OutFile
+	f.Settings.CacheDir = sectionValue(sec, "CacheDir")       // CacheDir
+	f.Settings.Tool1 = sectionValue(sec, "Tool1")             // Tool1
+	f.Settings.Tool2 = sectionValue(sec, "Tool2")             // Tool2
 
 	// Mode2
-	f.Settings.Mode2, err = strconv.ParseBool(sec.Get("Mode2").Value)
+	f.Settings.Mode2, err = strconv.ParseBool(sectionValue(sec, "Mode2"))
 	if err != nil {
 		return fmt.Errorf("failed to parse Mode2: %w", err)
 	}
@@ -134,16 +145,16 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	note := Note{}
 
 	// Length
-	note.Length, err = strconv.Atoi(sec.Get("Length").Value)
+	note.Length, err = strconv.Atoi(sectionValue(sec, "Length"))
 	if err != nil {
 		return fmt.Errorf("failed to parse length: %w", err)
 	}
 
 	// Lyric
-	note.Lyric = sec.Get("Lyric").Value
+	note.Lyric = sectionValue(sec, "Lyric")
 
 	// NoteNum
-	noteNum, err := strconv.ParseUint(sec.Get("NoteNum").Value, 10, 8)
+	noteNum, err := strconv.ParseUint(sectionValue(sec, "NoteNum"), 10, 8)
 	if err != nil {
 		return fmt.Errorf("failed to parse note number: %w", err)
 	}
@@ -220,12 +231,12 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	note.PitchBend = nil
 	if sec.Has("PBS") || sec.Has("PBStart") {
 		_pb, err := ParsePitchBend(
-			sec.Get("PBType").Value,
-			sec.Get("PBStart").Value,
-			sec.Get("PBS").Value,
-			sec.Get("PBW").Value,
-			sec.Get("PBY").Value,
-			sec.Get("PBM").Value,
+			sectionValue(sec, "PBType"),
+			sectionValue(sec, "PBStart"),
+			sectionValue(sec, "PBS"),
+			sectionValue(sec, "PBW"),
+			sectionValue(sec, "PBY"),
+			sectionValue(sec, "PBM"),
 		)
 		if err != nil {
 			return fmt.Errorf("failed to parse pitch bend data: %w", err)
@@ -234,7 +245,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	}
 
 	// Flags
-	note.Flags = sec.Get("Flags").Value
+	note.Flags = sectionValue(sec, "Flags")
 
 	f.Notes = append(f.Notes, note)
 
