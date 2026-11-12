@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/SladkyCitron/gotau/internal/ini"
 	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/umath"
-	"gopkg.in/ini.v1"
 )
 
 // 0,5,35,0,100,100,0,%,0,10,100
@@ -30,7 +30,7 @@ type File struct {
 	Settings Settings // Settings represents the settings of the UST file.
 	Notes    []Note   // Notes hold the notes.
 
-	iniFile *ini.File // iniFile holds the raw parsed INI file structure (used internally).
+	iniDoc *ini.Document // iniDoc holds the raw parsed INI file structure (used internally).
 }
 
 func (f *File) Sequence() (sequence.Sequence, error) {
