@@ -161,13 +161,12 @@ func TestDecode(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			f, err := os.Open(filepath.Join("testdata", test.name+".ust"))
+			b, err := os.ReadFile(filepath.Join("testdata", test.name+".ust"))
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer f.Close()
 
-			file, err := ust.Decode(f)
+			file, err := ust.Parse(b)
 			if test.expectErr {
 				assert.Error(t, err)
 				assert.Nil(t, file)
