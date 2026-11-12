@@ -84,7 +84,7 @@ func PrefixMapWithNoteFormat(notefmt NoteFormat) PrefixMapOption {
 	}
 }
 
-// ParsePrefixMap parses and decodes a prefix.map file from the provided reader.
+// ParsePrefixMap parses and decodes a prefix.map file.
 func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 	cfg := &prefixMapConfig{
 		encoding:  encoding.Nop,
