@@ -140,7 +140,7 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 			}
 		}
 
-		if len(value) >= 2 && value[0] == '"' {
+		if len(value) > 0 && value[0] == '"' {
 			if len(value) < 2 || value[len(value)-1] != '"' {
 				return nil, &ParseError{
 					Line:   lineNum,
