@@ -19,6 +19,10 @@ type Entry struct {
 	Value string
 }
 
+func (d *Document) HasSection(name string) bool {
+	return d.GetSection(name) != nil
+}
+
 func (d *Document) GetSection(name string) *Section {
 	for i := range d.Sections {
 		if d.Sections[i].Name == name {
@@ -39,4 +43,8 @@ func (s *Section) Get(key string) *Entry {
 		}
 	}
 	return nil
+}
+
+func (s *Section) Has(key string) bool {
+	return s.Get(key) != nil
 }
