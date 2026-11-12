@@ -104,7 +104,7 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 	prefixMap := make(PrefixMap)
 	for line := range bytes.SplitSeq(newData, []byte{'\n'}) {
 		line = bytes.TrimSuffix(line, []byte(`\r`))
-		if cfg.comment != 0 && bytes.HasPrefix(bytes.TrimSpace(line), []byte(string(cfg.comment))) {
+		if len(line) == 0 || cfg.comment != 0 && bytes.HasPrefix(bytes.TrimSpace(line), []byte(string(cfg.comment))) {
 			continue
 		}
 
