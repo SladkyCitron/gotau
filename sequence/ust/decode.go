@@ -17,7 +17,7 @@ import (
 var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)
 
 // Decode decodes a UST file.
-func Decode(r io.Reader) (file *File, err error) {
+func Decode(r io.Reader) (file *File, _ error) {
 	// detect encoding, step 1: sniff
 	const sniffLen = 256
 	buf := make([]byte, sniffLen)
