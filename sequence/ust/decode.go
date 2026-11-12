@@ -9,15 +9,22 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SladkyCitron/gotau/internal/ini"
 	"gitlab.com/gomidi/midi/v2"
 	"golang.org/x/net/html/charset"
-	"gopkg.in/ini.v1"
 )
 
 var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)
 
+func sectionValue(sec ini.Section, key string) string {
+	if entry := sec.Get(key); entry != nil {
+		return entry.Value
+	}
+	return ""
+}
+
 // Decode decodes a UST file.
-func Decode(r io.Reader) (file *File, err error) {
+func Decode(r io.Reader) (file *File, _ error) {
 	// detect encoding, step 1: sniff
 	const sniffLen = 256
 	buf := make([]byte, sniffLen)
@@ -51,17 +58,22 @@ func Decode(r io.Reader) (file *File, err error) {
 		newReader = dec
 	}
 
-	file = &File{}
-	loadopts := ini.LoadOptions{
-		UnparseableSections: []string{"#VERSION"},
-	}
-	file.iniFile, err = ini.LoadSources(loadopts, newReader)
+	data, err := io.ReadAll(newReader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse INI: %w", err)
+		return nil, fmt.Errorf("failed to read UST file: %w", err)
 	}
 
-	for _, sec := range file.iniFile.Sections() {
-		switch sec.Name() {
+	iniDoc, err := ini.Parse(data, ini.ParseOptions{
+		UnparseableSections: []string{"#VERSION"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse UST file: %w", err)
+	}
+
+	file = &File{iniDoc: iniDoc}
+
+	for _, sec := range file.iniDoc.Sections {
+		switch sec.Name {
 		case "DEFAULT":
 			continue
 		case "#VERSION":
@@ -75,12 +87,12 @@ func Decode(r io.Reader) (file *File, err error) {
 		case "#TRACKEND":
 			return file, nil
 		default:
-			if noteRe.MatchString(sec.Name()) {
+			if noteRe.MatchString(sec.Name) {
 				if err := file.parseNote(sec); err != nil {
-					return nil, fmt.Errorf("failed to parse note %s: %w", sec.Name(), err)
+					return nil, fmt.Errorf("failed to parse note %s: %w", sec.Name, err)
 				}
 			} else {
-				slog.Warn("invalid section, skipping", "name", sec.Name())
+				slog.Warn("invalid section, skipping", "name", sec.Name)
 				continue
 			}
 		}
@@ -89,9 +101,9 @@ func Decode(r io.Reader) (file *File, err error) {
 	return file, nil
 }
 
-func (f *File) parseVersion(sec *ini.Section) error {
+func (f *File) parseVersion(sec ini.Section) error {
 	f.Version = Version1_2
-	for line := range strings.SplitSeq(sec.Body(), "\n") {
+	for line := range strings.SplitSeq(sec.Raw, "\n") {
 		if strings.Contains(line, "UST Version") {
 			ver, err := ParseVersion(strings.TrimSpace(line))
 			if err != nil {
@@ -103,24 +115,25 @@ func (f *File) parseVersion(sec *ini.Section) error {
 	return nil
 }
 
-func (f *File) parseSetting(sec *ini.Section) (err error) {
+func (f *File) parseSetting(sec ini.Section) (err error) {
 	f.Settings = Settings{}
 
-	tempo, err := strconv.ParseFloat(sec.Key("Tempo").String(), 64) // Tempo
+	tempo, err := strconv.ParseFloat(sectionValue(sec, "Tempo"), 64) // Tempo
 	if err != nil {
 		return fmt.Errorf("failed to parse tempo: %w", err)
 	}
 	f.Settings.Tempo = tempo
 
-	f.Settings.ProjectName = sec.Key("ProjectName").String() // ProjectName
-	f.Settings.Project = sec.Key("Project").String()         // Project (OpenUtau)
-	f.Settings.VoiceDir = sec.Key("VoiceDir").String()       // VoiceDir
-	f.Settings.OutFile = sec.Key("OutFile").String()         // OutFile
-	f.Settings.CacheDir = sec.Key("CacheDir").String()       // CacheDir
-	f.Settings.Tool1 = sec.Key("Tool1").String()             // Tool1
-	f.Settings.Tool2 = sec.Key("Tool2").String()             // Tool2
+	f.Settings.ProjectName = sectionValue(sec, "ProjectName") // ProjectName
+	f.Settings.Project = sectionValue(sec, "Project")         // Project (OpenUtau)
+	f.Settings.VoiceDir = sectionValue(sec, "VoiceDir")       // VoiceDir
+	f.Settings.OutFile = sectionValue(sec, "OutFile")         // OutFile
+	f.Settings.CacheDir = sectionValue(sec, "CacheDir")       // CacheDir
+	f.Settings.Tool1 = sectionValue(sec, "Tool1")             // Tool1
+	f.Settings.Tool2 = sectionValue(sec, "Tool2")             // Tool2
 
-	f.Settings.Mode2, err = sec.Key("Mode2").Bool() // Mode2
+	// Mode2
+	f.Settings.Mode2, err = strconv.ParseBool(sectionValue(sec, "Mode2"))
 	if err != nil {
 		return fmt.Errorf("failed to parse Mode2: %w", err)
 	}
@@ -128,29 +141,29 @@ func (f *File) parseSetting(sec *ini.Section) (err error) {
 	return nil
 }
 
-func (f *File) parseNote(sec *ini.Section) (err error) {
+func (f *File) parseNote(sec ini.Section) (err error) {
 	note := Note{}
 
 	// Length
-	note.Length, err = sec.Key("Length").Int()
+	note.Length, err = strconv.Atoi(sectionValue(sec, "Length"))
 	if err != nil {
 		return fmt.Errorf("failed to parse length: %w", err)
 	}
 
 	// Lyric
-	note.Lyric = strings.TrimSpace(sec.Key("Lyric").String())
+	note.Lyric = sectionValue(sec, "Lyric")
 
 	// NoteNum
-	_noteNum, err := sec.Key("NoteNum").Uint()
+	noteNum, err := strconv.ParseUint(sectionValue(sec, "NoteNum"), 10, 8)
 	if err != nil {
 		return fmt.Errorf("failed to parse note number: %w", err)
 	}
-	note.NoteNum = midi.Note(_noteNum)
+	note.NoteNum = midi.Note(noteNum)
 
 	// Intensity
 	note.Intensity = 100
-	if key, err := sec.GetKey("Intensity"); err == nil && key.String() != "" {
-		intensity, err := strconv.ParseFloat(key.String(), 64)
+	if key := sec.Get("Intensity"); key != nil && key.Value != "" {
+		intensity, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse intensity: %w", err)
 		}
@@ -159,8 +172,8 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// Velocity
 	note.Velocity = 0
-	if key, err := sec.GetKey("Velocity"); err == nil && key.String() != "" {
-		note.Velocity, err = strconv.ParseFloat(key.String(), 64)
+	if key := sec.Get("Velocity"); key != nil && key.Value != "" {
+		note.Velocity, err = strconv.ParseFloat(key.Value, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse velocity: %w", err)
 		}
@@ -168,8 +181,8 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// Modulation
 	note.Modulation = 0
-	if key, err := sec.GetKey("Modulation"); err == nil && key.String() != "" {
-		modulation, err := strconv.ParseFloat(key.String(), 64)
+	if key := sec.Get("Modulation"); key != nil && key.Value != "" {
+		modulation, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse modulation: %w", err)
 		}
@@ -178,8 +191,8 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// PreUtterance
 	note.Preutterance = nil
-	if key, err := sec.GetKey("PreUtterance"); err == nil && key.String() != "" {
-		preUtterance, err := strconv.ParseFloat(key.String(), 64)
+	if key := sec.Get("PreUtterance"); key != nil && key.Value != "" {
+		preUtterance, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse pre-utterance: %w", err)
 		}
@@ -188,8 +201,8 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// VoiceOverlap
 	note.VoiceOverlap = nil
-	if key, err := sec.GetKey("VoiceOverlap"); err == nil && key.String() != "" {
-		voiceOverlap, err := strconv.ParseFloat(key.String(), 64)
+	if key := sec.Get("VoiceOverlap"); key != nil && key.Value != "" {
+		voiceOverlap, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse voice overlap: %w", err)
 		}
@@ -198,16 +211,16 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// StartPoint
 	note.StartPoint = 0
-	if key, err := sec.GetKey("StartPoint"); err == nil && key.String() != "" {
-		note.StartPoint, err = strconv.ParseFloat(key.String(), 64)
+	if key := sec.Get("StartPoint"); key != nil && key.Value != "" {
+		note.StartPoint, err = strconv.ParseFloat(key.Value, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse start point: %w", err)
 		}
 	}
 
 	// Envelope
-	if key, err := sec.GetKey("Envelope"); err == nil && key.String() != "" {
-		_envelope, err := ParseEnvelope(key.String())
+	if key := sec.Get("Envelope"); key != nil && key.Value != "" {
+		_envelope, err := ParseEnvelope(key.Value)
 		if err != nil {
 			return fmt.Errorf("failed to parse envelope: %w", err)
 		}
@@ -216,14 +229,14 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// Pitch bend (PB*)
 	note.PitchBend = nil
-	if sec.HasKey("PBS") || sec.HasKey("PBStart") {
+	if sec.Has("PBS") || sec.Has("PBStart") {
 		_pb, err := ParsePitchBend(
-			sec.Key("PBType").String(),
-			sec.Key("PBStart").String(),
-			sec.Key("PBS").String(),
-			sec.Key("PBW").String(),
-			sec.Key("PBY").String(),
-			sec.Key("PBM").String(),
+			sectionValue(sec, "PBType"),
+			sectionValue(sec, "PBStart"),
+			sectionValue(sec, "PBS"),
+			sectionValue(sec, "PBW"),
+			sectionValue(sec, "PBY"),
+			sectionValue(sec, "PBM"),
 		)
 		if err != nil {
 			return fmt.Errorf("failed to parse pitch bend data: %w", err)
@@ -232,7 +245,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 	}
 
 	// Flags
-	note.Flags = sec.Key("Flags").String()
+	note.Flags = sectionValue(sec, "Flags")
 
 	f.Notes = append(f.Notes, note)
 
