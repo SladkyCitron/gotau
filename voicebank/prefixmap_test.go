@@ -3,7 +3,6 @@ package voicebank_test
 import (
 	"bytes"
 	"cmp"
-	"strings"
 	"testing"
 
 	"github.com/SladkyCitron/gotau/voicebank"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestDecodePrefixMap(t *testing.T) {
-	s := "C5\tpre\tsuf\nD#5\tpre\t\n# comment\nF#5\t\tsuf\n"
+	b := []byte("C5\tpre\tsuf\nD#5\tpre\t\n# comment\nF#5\t\tsuf\n")
 
 	want := voicebank.PrefixMap{
 		midi.Note(midi.C(5)):  voicebank.Prefix{"pre", "suf"},
@@ -21,7 +20,7 @@ func TestDecodePrefixMap(t *testing.T) {
 		midi.Note(midi.Gb(5)): voicebank.Prefix{"", "suf"},
 	}
 
-	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(s))
+	prefixmap, err := voicebank.ParsePrefixMap(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +29,7 @@ func TestDecodePrefixMap(t *testing.T) {
 }
 
 func TestDecodePrefixMapWithOpts(t *testing.T) {
-	s := "C5 pre suf\nD#5 pre \n; comment\nF#5  suf\n"
+	b := []byte("C5 pre suf\nD#5 pre \n; comment\nF#5  suf\n")
 
 	want := voicebank.PrefixMap{
 		midi.Note(midi.C(5)):  voicebank.Prefix{"pre", "suf"},
@@ -38,7 +37,7 @@ func TestDecodePrefixMapWithOpts(t *testing.T) {
 		midi.Note(midi.Gb(5)): voicebank.Prefix{"", "suf"},
 	}
 
-	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(s),
+	prefixmap, err := voicebank.ParsePrefixMap(b,
 		voicebank.PrefixMapWithEncoding(japanese.ShiftJIS),
 		voicebank.PrefixMapWithComment(';'),
 		voicebank.PrefixMapWithDelimiter(' '),
@@ -51,7 +50,7 @@ func TestDecodePrefixMapWithOpts(t *testing.T) {
 }
 
 func TestDecodePrefixMapAllNotes(t *testing.T) {
-	s := "C5\t\tfoo\n" +
+	b := []byte("C5\t\tfoo\n" +
 		"C#5\t\tfoo\n" +
 		"Db5\t\tfoo\n" +
 		"D5\t\tfoo\n" +
@@ -69,7 +68,7 @@ func TestDecodePrefixMapAllNotes(t *testing.T) {
 		"Bb5\t\tfoo\n" +
 		"Hb5\t\tfoo\n" +
 		"B5\t\tfoo\n" +
-		"H5\t\tfoo\n"
+		"H5\t\tfoo\n")
 
 	want := voicebank.PrefixMap{
 		midi.Note(midi.C(5)):  voicebank.Prefix{"", "foo"},
@@ -91,7 +90,7 @@ func TestDecodePrefixMapAllNotes(t *testing.T) {
 		midi.Note(midi.B(5)): voicebank.Prefix{"", "foo"},
 	}
 
-	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(s))
+	prefixmap, err := voicebank.ParsePrefixMap(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,25 +99,21 @@ func TestDecodePrefixMapAllNotes(t *testing.T) {
 }
 
 func TestDecodePrefixMapInvalidLine(t *testing.T) {
-	s := "C#5\tfoo\n"
-
-	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(s))
+	prefixmap, err := voicebank.ParsePrefixMap([]byte("C#5\tfoo\n"))
 	assert.Nil(t, prefixmap)
 	assert.ErrorContains(t, err, "voicebank prefix.map: invalid line")
 }
 
 func TestDecodePrefixMapInvalidNote(t *testing.T) {
-	s := "XX\t\tfoo\n"
-
-	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(s))
+	prefixmap, err := voicebank.ParsePrefixMap([]byte("XX\t\tfoo\n"))
 	assert.Nil(t, prefixmap)
 	assert.ErrorContains(t, err, "invalid note format")
 }
 
 func TestPrefixMapRoundTrip(t *testing.T) {
-	want := "C5\tpre\tsuf\nD#5\tpre\t\nF#5\t\tsuf\n"
+	want := []byte("C5\tpre\tsuf\nD#5\tpre\t\nF#5\t\tsuf\n")
 
-	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(want))
+	prefixmap, err := voicebank.ParsePrefixMap(want)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,5 +129,5 @@ func TestPrefixMapRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, want, buf.String())
+	assert.Equal(t, want, buf.Bytes())
 }

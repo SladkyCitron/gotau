@@ -307,13 +307,12 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 
 	// prefix.map
 	if fileExists(fsys, "prefix.map") {
-		f, err := fsys.Open("prefix.map")
+		b, err := fs.ReadFile(fsys, "prefix.map")
 		if err != nil {
 			return nil, fmt.Errorf("voicebank: failed to open prefix.map: %w", err)
 		}
-		defer f.Close()
 
-		pm, err := DecodePrefixMap(f, PrefixMapWithEncoding(cfg.fileEncoding))
+		pm, err := ParsePrefixMap(b, PrefixMapWithEncoding(cfg.fileEncoding))
 		if err != nil {
 			return nil, fmt.Errorf("voicebank: failed to parse prefix.map: %w", err)
 		}
