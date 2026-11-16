@@ -453,6 +453,9 @@ func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (
 }
 
 func (s *Synth) getPreutter(otoEntry otoini.Entry, note sequence.Note) float64 {
+	if note.PreutteranceOverride != nil {
+		return *note.PreutteranceOverride
+	}
 	if note.Preutterance != nil {
 		return *note.Preutterance
 	}

@@ -13,6 +13,7 @@ type Note struct {
 	Velocity             float64    // Velocity affects timing (smaller = more rushed; rarely used).
 	Modulation           float64    // Modulation is the modulation depth, mostly used for vibrato (default = 0).
 	Preutterance         *float64   // PreUtterance is the duration (in milliseconds) before note to start playback (in OTO). If it's omitted, falls back to OTO defaults.
+	PreutteranceOverride *float64   // PreutteranceOverride is the explicit auto-adjusted pre-utterance override.
 	VoiceOverlap         *float64   // VoiceOverlap is the amount of overlap into the previous note. If it's omitted, falls back to OTO defaults.
 	StartPoint           float64    // StartPoint is the time where to begin sampling inside the audio file (in milliseconds).
 	VoiceOverlapOverride *float64   // VoiceOverlapOverride is the explicit auto-adjusted overlap override.

@@ -293,8 +293,10 @@ Mode2=false
 Length=480
 Lyric=a
 NoteNum=60
+PreUtterance=8
 VoiceOverlap=8
 StartPoint=3
+@preuttr=6.25
 @overlap=4.5
 @stpoint=12.25
 [#TRACKEND]
@@ -302,6 +304,7 @@ StartPoint=3
 
 	file, err := ust.Parse(data)
 	assert.NoError(t, err)
+	assert.Equal(t, float64Ptr(6.25), file.Notes[0].PreutteranceOverride)
 	assert.Equal(t, float64Ptr(4.5), file.Notes[0].VoiceOverlapOverride)
 	assert.Equal(t, float64Ptr(12.25), file.Notes[0].StartPointOverride)
 }

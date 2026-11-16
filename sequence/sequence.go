@@ -63,6 +63,9 @@ type Note struct {
 	// Preutterance is the duration (in milliseconds) before note to start playback (in oto). If it's omitted, falls back to oto defaults.
 	Preutterance *float64
 
+	// PreutteranceOverride is the explicit auto-adjusted pre-utterance override.
+	PreutteranceOverride *float64
+
 	// VoiceOverlap is the amount of overlap into the previous note. If it's omitted, falls back to oto defaults.
 	VoiceOverlap *float64
 

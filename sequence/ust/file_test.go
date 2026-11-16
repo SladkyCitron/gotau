@@ -54,6 +54,7 @@ func TestSequenceMode1PitchBend(t *testing.T) {
 
 func TestFileSequence(t *testing.T) {
 	preutterance := 12.5
+	preutteranceOverride := 6.25
 	voiceOverlap := 8.0
 	voiceOverlapOverride := 4.5
 	startPointOverride := 12.25
@@ -74,6 +75,7 @@ func TestFileSequence(t *testing.T) {
 				Velocity:             110,
 				Modulation:           25,
 				Preutterance:         &preutterance,
+				PreutteranceOverride: &preutteranceOverride,
 				VoiceOverlap:         &voiceOverlap,
 				StartPoint:           3,
 				VoiceOverlapOverride: &voiceOverlapOverride,
@@ -112,6 +114,7 @@ func TestFileSequence(t *testing.T) {
 	assert.Equal(t, 110.0, got.Notes[0].Velocity)
 	assert.Equal(t, 25.0, got.Notes[0].Modulation)
 	assert.Equal(t, &preutterance, got.Notes[0].Preutterance)
+	assert.Equal(t, &preutteranceOverride, got.Notes[0].PreutteranceOverride)
 	assert.Equal(t, &voiceOverlap, got.Notes[0].VoiceOverlap)
 	assert.Equal(t, 3.0, got.Notes[0].StartPoint)
 	assert.Equal(t, &voiceOverlapOverride, got.Notes[0].VoiceOverlapOverride)

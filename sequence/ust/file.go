@@ -66,6 +66,7 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 			Velocity:             note.Velocity,
 			Modulation:           note.Modulation,
 			Preutterance:         note.Preutterance,
+			PreutteranceOverride: note.PreutteranceOverride,
 			VoiceOverlap:         note.VoiceOverlap,
 			StartPoint:           note.StartPoint,
 			VoiceOverlapOverride: note.VoiceOverlapOverride,

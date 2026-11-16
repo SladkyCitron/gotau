@@ -229,6 +229,14 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 		note.Preutterance = &preUtterance
 	}
 
+	if key := sec.Get("@preuttr"); key != nil && key.Value != "" {
+		preUtterance, err := strconv.ParseFloat(key.Value, 64)
+		if err != nil {
+			return Note{}, fmt.Errorf("failed to parse pre-utterance override: %w", err)
+		}
+		note.PreutteranceOverride = &preUtterance
+	}
+
 	// VoiceOverlap
 	note.VoiceOverlap = nil
 	if key := sec.Get("VoiceOverlap"); key != nil && key.Value != "" {
