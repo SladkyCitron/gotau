@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -12,7 +13,7 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)
+var noteRe = regexp.MustCompile(`^#\d+$`)
 
 func sectionValue(sec ini.Section, key string) string {
 	if entry := sec.Get(key); entry != nil {
@@ -26,7 +27,11 @@ func Parse(data []byte) (file *File, _ error) {
 	// detect encoding
 	const sniffLen = 256
 	_charset := "shift_jis" // default
-	for line := range bytes.SplitSeq(data[:sniffLen], []byte{'\n'}) {
+	sniffData := data
+	if len(sniffData) > sniffLen {
+		sniffData = sniffData[:sniffLen]
+	}
+	for line := range bytes.SplitSeq(sniffData, []byte{'\n'}) {
 		if bytes.Contains(line, []byte("Charset=")) {
 			parts := bytes.SplitN(line, []byte{'='}, 2)
 			if len(parts) == 2 {
@@ -61,6 +66,7 @@ func parse(data []byte) (*File, error) {
 	}
 
 	file := &File{iniDoc: iniDoc}
+	noteIndex := 0
 
 	for _, sec := range file.iniDoc.Sections {
 		switch sec.Name {
@@ -76,11 +82,29 @@ func parse(data []byte) (*File, error) {
 			}
 		case "#TRACKEND":
 			return file, nil
+		case "#INSERT":
+			note, err := file.parseNote(sec)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse inserted note: %w", err)
+			}
+			file.Notes = slices.Insert(file.Notes, noteIndex, note)
+			noteIndex++
+		case "#DELETE":
+			if noteIndex < len(file.Notes) {
+				file.Notes = slices.Delete(file.Notes, noteIndex, noteIndex+1)
+			}
 		default:
 			if noteRe.MatchString(sec.Name) {
-				if err := file.parseNote(sec); err != nil {
+				note, err := file.parseNote(sec)
+				if err != nil {
 					return nil, fmt.Errorf("failed to parse note %s: %w", sec.Name, err)
 				}
+				if noteIndex < len(file.Notes) {
+					file.Notes[noteIndex] = note
+				} else {
+					file.Notes = append(file.Notes, note)
+				}
+				noteIndex++
 			} else {
 				//slog.Warn("invalid section, skipping", "name", sec.Name)
 				continue
@@ -131,13 +155,14 @@ func (f *File) parseSetting(sec ini.Section) (err error) {
 	return nil
 }
 
-func (f *File) parseNote(sec ini.Section) (err error) {
+func (f *File) parseNote(sec ini.Section) (Note, error) {
 	note := Note{}
+	var err error
 
 	// Length
 	note.Length, err = strconv.Atoi(sectionValue(sec, "Length"))
 	if err != nil {
-		return fmt.Errorf("failed to parse length: %w", err)
+		return Note{}, fmt.Errorf("failed to parse length: %w", err)
 	}
 
 	// Lyric
@@ -146,7 +171,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	// NoteNum
 	noteNum, err := strconv.ParseUint(sectionValue(sec, "NoteNum"), 10, 8)
 	if err != nil {
-		return fmt.Errorf("failed to parse note number: %w", err)
+		return Note{}, fmt.Errorf("failed to parse note number: %w", err)
 	}
 	note.NoteNum = midi.Note(noteNum)
 
@@ -155,7 +180,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	if key := sec.Get("Intensity"); key != nil && key.Value != "" {
 		intensity, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
-			return fmt.Errorf("failed to parse intensity: %w", err)
+			return Note{}, fmt.Errorf("failed to parse intensity: %w", err)
 		}
 		note.Intensity = intensity
 	}
@@ -165,7 +190,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	if key := sec.Get("Velocity"); key != nil && key.Value != "" {
 		note.Velocity, err = strconv.ParseFloat(key.Value, 64)
 		if err != nil {
-			return fmt.Errorf("failed to parse velocity: %w", err)
+			return Note{}, fmt.Errorf("failed to parse velocity: %w", err)
 		}
 	}
 
@@ -174,7 +199,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	if key := sec.Get("Modulation"); key != nil && key.Value != "" {
 		modulation, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
-			return fmt.Errorf("failed to parse modulation: %w", err)
+			return Note{}, fmt.Errorf("failed to parse modulation: %w", err)
 		}
 		note.Modulation = modulation
 	}
@@ -184,7 +209,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	if key := sec.Get("PreUtterance"); key != nil && key.Value != "" {
 		preUtterance, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
-			return fmt.Errorf("failed to parse pre-utterance: %w", err)
+			return Note{}, fmt.Errorf("failed to parse pre-utterance: %w", err)
 		}
 		note.Preutterance = &preUtterance
 	}
@@ -194,7 +219,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	if key := sec.Get("VoiceOverlap"); key != nil && key.Value != "" {
 		voiceOverlap, err := strconv.ParseFloat(key.Value, 64)
 		if err != nil {
-			return fmt.Errorf("failed to parse voice overlap: %w", err)
+			return Note{}, fmt.Errorf("failed to parse voice overlap: %w", err)
 		}
 		note.VoiceOverlap = &voiceOverlap
 	}
@@ -204,7 +229,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	if key := sec.Get("StartPoint"); key != nil && key.Value != "" {
 		note.StartPoint, err = strconv.ParseFloat(key.Value, 64)
 		if err != nil {
-			return fmt.Errorf("failed to parse start point: %w", err)
+			return Note{}, fmt.Errorf("failed to parse start point: %w", err)
 		}
 	}
 
@@ -212,7 +237,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	if key := sec.Get("Envelope"); key != nil && key.Value != "" {
 		_envelope, err := ParseEnvelope(key.Value)
 		if err != nil {
-			return fmt.Errorf("failed to parse envelope: %w", err)
+			return Note{}, fmt.Errorf("failed to parse envelope: %w", err)
 		}
 		note.Envelope = _envelope
 	}
@@ -229,7 +254,7 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 			sectionValue(sec, "PBM"),
 		)
 		if err != nil {
-			return fmt.Errorf("failed to parse pitch bend data: %w", err)
+			return Note{}, fmt.Errorf("failed to parse pitch bend data: %w", err)
 		}
 		note.PitchBend = _pb
 	}
@@ -237,7 +262,5 @@ func (f *File) parseNote(sec ini.Section) (err error) {
 	// Flags
 	note.Flags = sectionValue(sec, "Flags")
 
-	f.Notes = append(f.Notes, note)
-
-	return nil
+	return note, nil
 }

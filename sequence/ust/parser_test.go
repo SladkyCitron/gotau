@@ -181,6 +181,52 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestDecodeUST20Operations(t *testing.T) {
+	data := []byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#INSERT]
+Length=240
+Lyric=i
+NoteNum=62
+[#0002]
+Length=960
+Lyric=u
+NoteNum=64
+[#DELETE]
+[#TRACKEND]
+`)
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, ust.Version2_0, file.Version)
+	assert.Equal(t, []ust.Note{
+		{
+			Length:    480,
+			Lyric:     "a",
+			NoteNum:   midi.Note(60),
+			Intensity: 100,
+		},
+		{
+			Length:    240,
+			Lyric:     "i",
+			NoteNum:   midi.Note(62),
+			Intensity: 100,
+		},
+		{
+			Length:    960,
+			Lyric:     "u",
+			NoteNum:   midi.Note(64),
+			Intensity: 100,
+		},
+	}, file.Notes)
+}
+
 func fileIsEqual(t *testing.T, expect, actual *ust.File) {
 	assert.Equal(t, expect.Version, actual.Version)
 	assert.Equal(t, expect.Settings, actual.Settings)
