@@ -14,14 +14,15 @@ type PitchBendMode string
 
 // PitchBend represents the pitch bend data. Mode1 uses cents, Mode2 uses deci-semitones.
 type PitchBend struct {
-	Type   int               // Type is the pitch bend type (0 = no bend, 5 = default).
-	Start  umath.XY[float64] // Start is the starting point in milliseconds (X-axis) and initial pitch offset (Y-axis).
-	Widths []float64         // Widths are the widths in milliseconds for each pitch segment.
-	Ys     []float64         // Ys are the pitch offsets for each segment.
-	Modes  []PitchBendMode   // Modes are the interpolation modes for each segment.
+	Type    int               // Type is the pitch bend type (0 = no bend, 5 = default).
+	Start   umath.XY[float64] // Start is the starting point in milliseconds (X-axis) and initial pitch offset (Y-axis).
+	Pitches []float64         // Pitches are Mode 1 pitch samples in cents, recorded every 5 ticks.
+	Widths  []float64         // Widths are the widths in milliseconds for each pitch segment.
+	Ys      []float64         // Ys are the pitch offsets for each segment.
+	Modes   []PitchBendMode   // Modes are the interpolation modes for each segment.
 }
 
-func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err error) {
+func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string, pitches ...string) (pb *PitchBend, err error) {
 	pb = &PitchBend{}
 
 	// PBType
@@ -64,7 +65,34 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 		pb.Modes = append(pb.Modes, PitchBendMode(m))
 	}
 
+	if len(pitches) > 0 {
+		pb.Pitches, err = parsePitchSamples(pitches[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse Mode 1 pitches: %w", err)
+		}
+	}
+
 	return pb, nil
+}
+
+func parsePitchSamples(s string) ([]float64, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	parts := strings.Split(s, ",")
+	pitches := make([]float64, len(parts))
+	for i, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			continue
+		}
+		pitch, err := strconv.ParseFloat(strings.TrimSpace(part), 64)
+		if err != nil {
+			return nil, err
+		}
+		pitches[i] = pitch
+	}
+	return pitches, nil
 }
 
 func (pb *PitchBend) parseStart(s string) error {

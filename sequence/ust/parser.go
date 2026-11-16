@@ -259,7 +259,16 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 
 	// Pitch bend (PB*)
 	note.PitchBend = nil
-	if sec.Has("PBS") || sec.Has("PBStart") {
+	mode1Pitches := sectionValue(sec, "PitchBend")
+	if mode1Pitches == "" {
+		mode1Pitches = sectionValue(sec, "Pitches")
+	}
+	if mode1Pitches == "" {
+		mode1Pitches = sectionValue(sec, "Piches")
+	}
+	if sec.Has("PBS") || sec.Has("PBStart") || sec.Has("PBW") || sec.Has("PBY") ||
+		sec.Has("PBM") || sec.Has("PBType") || sec.Has("PitchBend") ||
+		sec.Has("Pitches") || sec.Has("Piches") {
 		_pb, err := ParsePitchBend(
 			sectionValue(sec, "PBType"),
 			sectionValue(sec, "PBStart"),
@@ -267,6 +276,7 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 			sectionValue(sec, "PBW"),
 			sectionValue(sec, "PBY"),
 			sectionValue(sec, "PBM"),
+			mode1Pitches,
 		)
 		if err != nil {
 			return Note{}, fmt.Errorf("failed to parse pitch bend data: %w", err)

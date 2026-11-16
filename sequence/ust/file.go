@@ -69,7 +69,7 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
 			Envelope:     envelopeToCurve(note.Envelope),
-			PitchBend:    pitchBendToCurve(note.PitchBend, f.Settings.Mode2, noteDurMs),
+			PitchBend:    pitchBendToCurve(note.PitchBend, f.Settings.Mode2, noteDurMs, timeutil.TicksToSeconds(5, seq.Metadata.Resolution, seq.Metadata.Tempo)*1000),
 			Flags:        flags,
 		})
 		position += note.Length
@@ -96,9 +96,20 @@ func envelopeToCurve(env *Envelope) umath.Envelope {
 	return points
 }
 
-func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve {
+func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs, mode1StepMs float64) umath.Curve {
 	if pb == nil {
 		return umath.Curve{}
+	}
+	if !mode2 && len(pb.Pitches) > 0 {
+		points := make(umath.Curve, 0, len(pb.Pitches))
+		for i, pitch := range pb.Pitches {
+			points = append(points, umath.CurvePoint{
+				X:      pb.Start.X + float64(i)*mode1StepMs,
+				Y:      pitch,
+				Interp: umath.CurveInterpolationLinear,
+			})
+		}
+		return points
 	}
 	if len(pb.Widths) == 0 {
 		return umath.Curve{}

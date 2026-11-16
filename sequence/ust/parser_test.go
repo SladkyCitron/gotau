@@ -263,6 +263,26 @@ NoteNum=60
 	assert.Equal(t, "あ", file.Notes[0].Lyric)
 }
 
+func TestDecodeMode1PitchBend(t *testing.T) {
+	data := []byte(`[#SETTING]
+Tempo=120
+Mode2=false
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+PBType=5
+PBStart=-10
+PitchBend=0,100,-50
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{0, 100, -50}, file.Notes[0].PitchBend.Pitches)
+	assert.Equal(t, float64(-10), file.Notes[0].PitchBend.Start.X)
+}
+
 func TestDecodeShiftJISWithoutCharset(t *testing.T) {
 	lyric := string([]byte{0x82, 0xa0}) // あ in Shift-JIS
 	data := []byte(`[#SETTING]
