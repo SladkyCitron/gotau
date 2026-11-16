@@ -283,6 +283,29 @@ PitchBend=0,100,-50
 	assert.Equal(t, float64(-10), file.Notes[0].PitchBend.Start.X)
 }
 
+func TestDecodeUST20Overrides(t *testing.T) {
+	data := []byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=false
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+VoiceOverlap=8
+StartPoint=3
+@overlap=4.5
+@stpoint=12.25
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, float64Ptr(4.5), file.Notes[0].VoiceOverlapOverride)
+	assert.Equal(t, float64Ptr(12.25), file.Notes[0].StartPointOverride)
+}
+
 func TestDecodeShiftJISWithoutCharset(t *testing.T) {
 	lyric := string([]byte{0x82, 0xa0}) // あ in Shift-JIS
 	data := []byte(`[#SETTING]

@@ -55,6 +55,8 @@ func TestSequenceMode1PitchBend(t *testing.T) {
 func TestFileSequence(t *testing.T) {
 	preutterance := 12.5
 	voiceOverlap := 8.0
+	voiceOverlapOverride := 4.5
+	startPointOverride := 12.25
 	file := &ust.File{
 		Settings: ust.Settings{
 			Tempo:       120,
@@ -65,15 +67,17 @@ func TestFileSequence(t *testing.T) {
 		Notes: []ust.Note{
 			{Length: 240, Lyric: "R", NoteNum: midi.Note(60)},
 			{
-				Length:       480,
-				Lyric:        "a",
-				NoteNum:      midi.Note(69),
-				Intensity:    80,
-				Velocity:     110,
-				Modulation:   25,
-				Preutterance: &preutterance,
-				VoiceOverlap: &voiceOverlap,
-				StartPoint:   3,
+				Length:               480,
+				Lyric:                "a",
+				NoteNum:              midi.Note(69),
+				Intensity:            80,
+				Velocity:             110,
+				Modulation:           25,
+				Preutterance:         &preutterance,
+				VoiceOverlap:         &voiceOverlap,
+				StartPoint:           3,
+				VoiceOverlapOverride: &voiceOverlapOverride,
+				StartPointOverride:   &startPointOverride,
 				Envelope: &ust.Envelope{
 					P1: 1, P2: 2, P3: 3,
 					V1: 0, V2: 80, V3: 100, V4: 50,
@@ -110,6 +114,8 @@ func TestFileSequence(t *testing.T) {
 	assert.Equal(t, &preutterance, got.Notes[0].Preutterance)
 	assert.Equal(t, &voiceOverlap, got.Notes[0].VoiceOverlap)
 	assert.Equal(t, 3.0, got.Notes[0].StartPoint)
+	assert.Equal(t, &voiceOverlapOverride, got.Notes[0].VoiceOverlapOverride)
+	assert.Equal(t, &startPointOverride, got.Notes[0].StartPointOverride)
 	assert.Equal(t, sequence.Flags{"g": -5, "B": 50}, got.Notes[0].Flags)
 	assert.Equal(t, umath.Envelope{
 		{X: 1, Y: 0},

@@ -58,19 +58,21 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 
 		noteDurMs := timeutil.TicksToSeconds(note.Length, seq.Metadata.Resolution, seq.Metadata.Tempo) * 1000
 		seq.Notes = append(seq.Notes, sequence.Note{
-			Position:     position,
-			Duration:     note.Length,
-			Lyric:        note.Lyric,
-			Note:         note.NoteNum,
-			Intensity:    note.Intensity / 100,
-			Velocity:     note.Velocity,
-			Modulation:   note.Modulation,
-			Preutterance: note.Preutterance,
-			VoiceOverlap: note.VoiceOverlap,
-			StartPoint:   note.StartPoint,
-			Envelope:     envelopeToCurve(note.Envelope),
-			PitchBend:    pitchBendToCurve(note.PitchBend, f.Settings.Mode2, noteDurMs, timeutil.TicksToSeconds(5, seq.Metadata.Resolution, seq.Metadata.Tempo)*1000),
-			Flags:        flags,
+			Position:             position,
+			Duration:             note.Length,
+			Lyric:                note.Lyric,
+			Note:                 note.NoteNum,
+			Intensity:            note.Intensity / 100,
+			Velocity:             note.Velocity,
+			Modulation:           note.Modulation,
+			Preutterance:         note.Preutterance,
+			VoiceOverlap:         note.VoiceOverlap,
+			StartPoint:           note.StartPoint,
+			VoiceOverlapOverride: note.VoiceOverlapOverride,
+			StartPointOverride:   note.StartPointOverride,
+			Envelope:             envelopeToCurve(note.Envelope),
+			PitchBend:            pitchBendToCurve(note.PitchBend, f.Settings.Mode2, noteDurMs, timeutil.TicksToSeconds(5, seq.Metadata.Resolution, seq.Metadata.Tempo)*1000),
+			Flags:                flags,
 		})
 		position += note.Length
 	}

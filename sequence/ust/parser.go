@@ -248,6 +248,22 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 		}
 	}
 
+	// UST 2.0 overrides
+	if key := sec.Get("@overlap"); key != nil && key.Value != "" {
+		overlap, err := strconv.ParseFloat(key.Value, 64)
+		if err != nil {
+			return Note{}, fmt.Errorf("failed to parse overlap override: %w", err)
+		}
+		note.VoiceOverlapOverride = &overlap
+	}
+	if key := sec.Get("@stpoint"); key != nil && key.Value != "" {
+		startPoint, err := strconv.ParseFloat(key.Value, 64)
+		if err != nil {
+			return Note{}, fmt.Errorf("failed to parse start-point override: %w", err)
+		}
+		note.StartPointOverride = &startPoint
+	}
+
 	// Envelope
 	if key := sec.Get("Envelope"); key != nil && key.Value != "" {
 		_envelope, err := ParseEnvelope(key.Value)

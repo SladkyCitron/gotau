@@ -69,6 +69,12 @@ type Note struct {
 	// StartPoint is the time where to begin sampling inside the audio file (in milliseconds).
 	StartPoint float64
 
+	// VoiceOverlapOverride is the explicit auto-adjusted overlap override.
+	VoiceOverlapOverride *float64
+
+	// StartPointOverride is the explicit auto-adjusted start-point override.
+	StartPointOverride *float64
+
 	// Envelope is the volume envelope curve.
 	Envelope umath.Envelope
 
