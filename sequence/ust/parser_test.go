@@ -227,6 +227,26 @@ NoteNum=64
 	}, file.Notes)
 }
 
+func TestDecodeUTF8BOM(t *testing.T) {
+	data := append([]byte{0xef, 0xbb, 0xbf}, []byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`)...)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, ust.Version2_0, file.Version)
+	assert.Len(t, file.Notes, 1)
+	assert.Equal(t, "a", file.Notes[0].Lyric)
+}
+
 func fileIsEqual(t *testing.T, expect, actual *ust.File) {
 	assert.Equal(t, expect.Version, actual.Version)
 	assert.Equal(t, expect.Settings, actual.Settings)

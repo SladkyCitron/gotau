@@ -24,6 +24,8 @@ func sectionValue(sec ini.Section, key string) string {
 
 // Parse parses a UST file.
 func Parse(data []byte) (file *File, _ error) {
+	data = bytes.TrimPrefix(data, []byte{0xef, 0xbb, 0xbf})
+
 	// detect encoding
 	const sniffLen = 256
 	_charset := "shift_jis" // default
