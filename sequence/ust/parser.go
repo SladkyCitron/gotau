@@ -149,9 +149,11 @@ func (f *File) parseSetting(sec ini.Section) (err error) {
 	f.Settings.Tool2 = sectionValue(sec, "Tool2")             // Tool2
 
 	// Mode2
-	f.Settings.Mode2, err = strconv.ParseBool(sectionValue(sec, "Mode2"))
-	if err != nil {
-		return fmt.Errorf("failed to parse Mode2: %w", err)
+	if value := sectionValue(sec, "Mode2"); value != "" {
+		f.Settings.Mode2, err = strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse Mode2: %w", err)
+		}
 	}
 
 	return nil
