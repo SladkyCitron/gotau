@@ -64,20 +64,20 @@ func Parse(data []byte) (file *File, _ error) {
 	if len(sniffData) > sniffLen {
 		sniffData = sniffData[:sniffLen]
 	}
-	_charset := ""
+	charsetName := ""
 	if match := charsetRe.FindSubmatch(sniffData); match != nil {
-		_charset = strings.TrimSpace(string(match[1]))
+		charsetName = strings.TrimSpace(string(match[1]))
 	} else if utf8.Valid(data) {
-		_charset = "utf-8"
+		charsetName = "utf-8"
 	} else {
-		_charset = "shift_jis"
+		charsetName = "shift_jis"
 	}
 
-	lc := strings.ToLower(_charset)
+	lc := strings.ToLower(charsetName)
 	if lc != "" && lc != "utf-8" && lc != "utf8" {
 		enc, _ := charset.Lookup(lc)
 		if enc == nil {
-			return nil, fmt.Errorf("unsupported charset: %s", _charset)
+			return nil, fmt.Errorf("unsupported charset: %s", charsetName)
 		}
 		data, err := enc.NewDecoder().Bytes(data)
 		if err != nil {
@@ -293,7 +293,7 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 	if sec.Has("PBS") || sec.Has("PBStart") || sec.Has("PBW") || sec.Has("PBY") ||
 		sec.Has("PBM") || sec.Has("PBType") || sec.Has("PitchBend") ||
 		sec.Has("Pitches") || sec.Has("Piches") {
-		_pb, err := ParsePitchBend(
+		pitchBend, err := ParsePitchBend(
 			sectionValue(sec, "PBType"),
 			sectionValue(sec, "PBStart"),
 			sectionValue(sec, "PBS"),
@@ -305,7 +305,7 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 		if err != nil {
 			return Note{}, fmt.Errorf("failed to parse pitch bend data: %w", err)
 		}
-		note.PitchBend = _pb
+		note.PitchBend = pitchBend
 	}
 
 	// Flags
