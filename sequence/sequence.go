@@ -63,11 +63,20 @@ type Note struct {
 	// Preutterance is the duration (in milliseconds) before note to start playback (in oto). If it's omitted, falls back to oto defaults.
 	Preutterance *float64
 
+	// PreutteranceOverride is the explicit auto-adjusted pre-utterance override.
+	PreutteranceOverride *float64
+
 	// VoiceOverlap is the amount of overlap into the previous note. If it's omitted, falls back to oto defaults.
 	VoiceOverlap *float64
 
 	// StartPoint is the time where to begin sampling inside the audio file (in milliseconds).
 	StartPoint float64
+
+	// VoiceOverlapOverride is the explicit auto-adjusted overlap override.
+	VoiceOverlapOverride *float64
+
+	// StartPointOverride is the explicit auto-adjusted start-point override.
+	StartPointOverride *float64
 
 	// Envelope is the volume envelope curve.
 	Envelope umath.Envelope

@@ -181,6 +181,213 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestDecodeUST20Operations(t *testing.T) {
+	data := []byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#INSERT]
+Length=240
+Lyric=i
+NoteNum=62
+[#0002]
+Length=960
+Lyric=u
+NoteNum=64
+[#DELETE]
+[#TRACKEND]
+`)
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, ust.Version2_0, file.Version)
+	assert.Equal(t, []ust.Note{
+		{
+			Length:    480,
+			Lyric:     "a",
+			NoteNum:   midi.Note(60),
+			Intensity: 100,
+		},
+		{
+			Length:    240,
+			Lyric:     "i",
+			NoteNum:   midi.Note(62),
+			Intensity: 100,
+		},
+	}, file.Notes)
+}
+
+func TestDecodeUTF8BOM(t *testing.T) {
+	data := append([]byte{0xef, 0xbb, 0xbf}, []byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`)...)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, ust.Version2_0, file.Version)
+	assert.Len(t, file.Notes, 1)
+	assert.Equal(t, "a", file.Notes[0].Lyric)
+}
+
+func TestDecodeUTF8WithoutCharset(t *testing.T) {
+	data := []byte(`[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=あ
+NoteNum=60
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, "あ", file.Notes[0].Lyric)
+}
+
+func TestDecodeMode1PitchBend(t *testing.T) {
+	data := []byte(`[#SETTING]
+Tempo=120
+Mode2=false
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+PBType=5
+PBStart=-10
+PitchBend=0,100,-50
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{0, 100, -50}, file.Notes[0].PitchBend.Pitches)
+	assert.Equal(t, float64(-10), file.Notes[0].PitchBend.Start.X)
+}
+
+func TestDecodeUST20Overrides(t *testing.T) {
+	data := []byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=false
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+PreUtterance=8
+VoiceOverlap=8
+StartPoint=3
+@preuttr=6.25
+@overlap=4.5
+@stpoint=12.25
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, float64Ptr(6.25), file.Notes[0].PreutteranceOverride)
+	assert.Equal(t, float64Ptr(4.5), file.Notes[0].VoiceOverlapOverride)
+	assert.Equal(t, float64Ptr(12.25), file.Notes[0].StartPointOverride)
+}
+
+func TestDecodeShiftJISWithoutCharset(t *testing.T) {
+	lyric := string([]byte{0x82, 0xa0}) // あ in Shift-JIS
+	data := []byte(`[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=` + lyric + `
+NoteNum=60
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, "あ", file.Notes[0].Lyric)
+}
+
+func TestDecodeExplicitCharsetTakesPrecedence(t *testing.T) {
+	data := []byte(`Charset=not-a-real-charset
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "unsupported charset: not-a-real-charset")
+}
+
+func TestDecodeInvalidTempo(t *testing.T) {
+	data := []byte(`[#SETTING]
+Tempo=-1
+`)
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "invalid tempo: -1")
+}
+
+func TestDecodeInvalidNoteNum(t *testing.T) {
+	data := []byte(`[#0000]
+Length=480
+Lyric=a
+NoteNum=128
+[#TRACKEND]
+`)
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "invalid MIDI note number: 128")
+}
+
+func TestDecodeInvalidLength(t *testing.T) {
+	data := []byte(`[#0000]
+Length=-1
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`)
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "invalid note length: -1")
+}
+
+func FuzzParse(f *testing.F) {
+	f.Add([]byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`))
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		_, _ = ust.Parse(data)
+	})
+}
+
 func fileIsEqual(t *testing.T, expect, actual *ust.File) {
 	assert.Equal(t, expect.Version, actual.Version)
 	assert.Equal(t, expect.Settings, actual.Settings)

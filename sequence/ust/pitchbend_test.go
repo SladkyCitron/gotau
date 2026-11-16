@@ -15,6 +15,7 @@ func TestParsePitchBend(t *testing.T) {
 		"30,40",   // pbw
 		"0.5,1.0", // pby
 		"l,s",     // pbm
+		"0,100,-50",
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, pb)
@@ -22,6 +23,7 @@ func TestParsePitchBend(t *testing.T) {
 	assert.Equal(t, 5, pb.Type)
 	assert.Equal(t, float64(10.0), pb.Start.X)
 	assert.Equal(t, float64(2.0), pb.Start.Y)
+	assert.Equal(t, []float64{0, 100, -50}, pb.Pitches)
 	assert.Equal(t, []float64{30, 40}, pb.Widths)
 	assert.Equal(t, []float64{0.5, 1.0}, pb.Ys)
 	assert.Equal(t, []ust.PitchBendMode{"l", "s"}, pb.Modes)

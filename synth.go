@@ -453,6 +453,9 @@ func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (
 }
 
 func (s *Synth) getPreutter(otoEntry otoini.Entry, note sequence.Note) float64 {
+	if note.PreutteranceOverride != nil {
+		return *note.PreutteranceOverride
+	}
 	if note.Preutterance != nil {
 		return *note.Preutterance
 	}
@@ -460,10 +463,16 @@ func (s *Synth) getPreutter(otoEntry otoini.Entry, note sequence.Note) float64 {
 }
 
 func (s *Synth) getStartPoint(note sequence.Note) float64 {
+	if note.StartPointOverride != nil {
+		return *note.StartPointOverride
+	}
 	return note.StartPoint * math.Pow(2, 1-note.Velocity/100)
 }
 
 func (s *Synth) getOverlap(otoEntry otoini.Entry, note sequence.Note) float64 {
+	if note.VoiceOverlapOverride != nil {
+		return *note.VoiceOverlapOverride
+	}
 	if note.VoiceOverlap != nil {
 		return *note.VoiceOverlap
 	}
