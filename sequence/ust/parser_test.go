@@ -247,6 +247,56 @@ NoteNum=60
 	assert.Equal(t, "a", file.Notes[0].Lyric)
 }
 
+func TestDecodeUTF8WithoutCharset(t *testing.T) {
+	data := []byte(`[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=あ
+NoteNum=60
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, "あ", file.Notes[0].Lyric)
+}
+
+func TestDecodeShiftJISWithoutCharset(t *testing.T) {
+	lyric := string([]byte{0x82, 0xa0}) // あ in Shift-JIS
+	data := []byte(`[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=` + lyric + `
+NoteNum=60
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.NoError(t, err)
+	assert.Equal(t, "あ", file.Notes[0].Lyric)
+}
+
+func TestDecodeExplicitCharsetTakesPrecedence(t *testing.T) {
+	data := []byte(`Charset=not-a-real-charset
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`)
+
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "unsupported charset: not-a-real-charset")
+}
+
 func fileIsEqual(t *testing.T, expect, actual *ust.File) {
 	assert.Equal(t, expect.Version, actual.Version)
 	assert.Equal(t, expect.Settings, actual.Settings)

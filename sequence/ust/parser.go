@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/SladkyCitron/gotau/internal/ini"
 	"gitlab.com/gomidi/midi/v2"
@@ -14,6 +15,7 @@ import (
 )
 
 var noteRe = regexp.MustCompile(`^#\d+$`)
+var charsetRe = regexp.MustCompile(`(?im)^[\t ]*Charset[\t ]*=[\t ]*([^\r\n]+)`)
 
 func sectionValue(sec ini.Section, key string) string {
 	if entry := sec.Get(key); entry != nil {
@@ -24,23 +26,23 @@ func sectionValue(sec ini.Section, key string) string {
 
 // Parse parses a UST file.
 func Parse(data []byte) (file *File, _ error) {
+	// Trim BOM if present, as it can interfere with charset detection
 	data = bytes.TrimPrefix(data, []byte{0xef, 0xbb, 0xbf})
 
-	// detect encoding
-	const sniffLen = 256
-	_charset := "shift_jis" // default
+	// Detect encoding. An explicit declaration takes precedence over automatic
+	// detection; Shift-JIS is the fallback for invalid UTF-8.
+	const sniffLen = 4096
 	sniffData := data
 	if len(sniffData) > sniffLen {
 		sniffData = sniffData[:sniffLen]
 	}
-	for line := range bytes.SplitSeq(sniffData, []byte{'\n'}) {
-		if bytes.Contains(line, []byte("Charset=")) {
-			parts := bytes.SplitN(line, []byte{'='}, 2)
-			if len(parts) == 2 {
-				_charset = string(bytes.TrimSpace(parts[1]))
-			}
-			break
-		}
+	_charset := ""
+	if match := charsetRe.FindSubmatch(sniffData); match != nil {
+		_charset = strings.TrimSpace(string(match[1]))
+	} else if utf8.Valid(data) {
+		_charset = "utf-8"
+	} else {
+		_charset = "shift_jis"
 	}
 
 	lc := strings.ToLower(_charset)
