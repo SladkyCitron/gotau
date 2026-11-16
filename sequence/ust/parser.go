@@ -140,6 +140,9 @@ func (f *File) parseSetting(sec ini.Section) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to parse tempo: %w", err)
 	}
+	if tempo <= 0 {
+		return fmt.Errorf("invalid tempo: %f", tempo)
+	}
 	f.Settings.Tempo = tempo
 
 	f.Settings.ProjectName = sectionValue(sec, "ProjectName") // ProjectName
@@ -170,6 +173,9 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 	if err != nil {
 		return Note{}, fmt.Errorf("failed to parse length: %w", err)
 	}
+	if note.Length <= 0 {
+		return Note{}, fmt.Errorf("invalid note length: %d", note.Length)
+	}
 
 	// Lyric
 	note.Lyric = sectionValue(sec, "Lyric")
@@ -178,6 +184,9 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 	noteNum, err := strconv.ParseUint(sectionValue(sec, "NoteNum"), 10, 8)
 	if err != nil {
 		return Note{}, fmt.Errorf("failed to parse note number: %w", err)
+	}
+	if noteNum > 127 {
+		return Note{}, fmt.Errorf("invalid MIDI note number: %d", noteNum)
 	}
 	note.NoteNum = midi.Note(noteNum)
 

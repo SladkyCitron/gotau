@@ -297,6 +297,39 @@ NoteNum=60
 	assert.ErrorContains(t, err, "unsupported charset: not-a-real-charset")
 }
 
+func TestDecodeInvalidTempo(t *testing.T) {
+	data := []byte(`[#SETTING]
+Tempo=-1
+`)
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "invalid tempo: -1")
+}
+
+func TestDecodeInvalidNoteNum(t *testing.T) {
+	data := []byte(`[#0000]
+Length=480
+Lyric=a
+NoteNum=128
+[#TRACKEND]
+`)
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "invalid note number: 128")
+}
+
+func TestDecodeInvalidLength(t *testing.T) {
+	data := []byte(`[#0000]
+Length=-1
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`)
+	file, err := ust.Parse(data)
+	assert.Nil(t, file)
+	assert.ErrorContains(t, err, "invalid length: -1")
+}
+
 func fileIsEqual(t *testing.T, expect, actual *ust.File) {
 	assert.Equal(t, expect.Version, actual.Version)
 	assert.Equal(t, expect.Settings, actual.Settings)
