@@ -330,6 +330,24 @@ NoteNum=60
 	assert.ErrorContains(t, err, "invalid length: -1")
 }
 
+func FuzzParse(f *testing.F) {
+	f.Add([]byte(`[#VERSION]
+UST Version2.0
+[#SETTING]
+Tempo=120
+Mode2=true
+[#0000]
+Length=480
+Lyric=a
+NoteNum=60
+[#TRACKEND]
+`))
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		_, _ = ust.Parse(data)
+	})
+}
+
 func fileIsEqual(t *testing.T, expect, actual *ust.File) {
 	assert.Equal(t, expect.Version, actual.Version)
 	assert.Equal(t, expect.Settings, actual.Settings)
