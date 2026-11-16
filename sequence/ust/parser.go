@@ -3,6 +3,7 @@ package ust
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"regexp"
 	"slices"
 	"strconv"
@@ -22,6 +23,33 @@ func sectionValue(sec ini.Section, key string) string {
 		return entry.Value
 	}
 	return ""
+}
+
+func optionalFloat(sec ini.Section, key string) (*float64, error) {
+	value := sectionValue(sec, key)
+	if value == "" {
+		return nil, nil
+	}
+
+	v, err := parseFiniteFloat(value)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s: %w", key, err)
+	}
+
+	return &v, nil
+}
+
+func parseFiniteFloat(value string) (float64, error) {
+	v, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0, fmt.Errorf("value must be finite")
+	}
+
+	return v, nil
 }
 
 // Parse parses a UST file.
@@ -136,7 +164,7 @@ func (f *File) parseVersion(sec ini.Section) error {
 func (f *File) parseSetting(sec ini.Section) (err error) {
 	f.Settings = Settings{}
 
-	tempo, err := strconv.ParseFloat(sectionValue(sec, "Tempo"), 64) // Tempo
+	tempo, err := parseFiniteFloat(sectionValue(sec, "Tempo")) // Tempo
 	if err != nil {
 		return fmt.Errorf("failed to parse tempo: %w", err)
 	}
@@ -192,84 +220,56 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 
 	// Intensity
 	note.Intensity = 100
-	if key := sec.Get("Intensity"); key != nil && key.Value != "" {
-		intensity, err := strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse intensity: %w", err)
-		}
-		note.Intensity = intensity
+	if intensity, err := optionalFloat(sec, "Intensity"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse intensity: %w", err)
+	} else if intensity != nil {
+		note.Intensity = *intensity
 	}
 
 	// Velocity
 	note.Velocity = 0
-	if key := sec.Get("Velocity"); key != nil && key.Value != "" {
-		note.Velocity, err = strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse velocity: %w", err)
-		}
+	if velocity, err := optionalFloat(sec, "Velocity"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse velocity: %w", err)
+	} else if velocity != nil {
+		note.Velocity = *velocity
 	}
 
 	// Modulation
 	note.Modulation = 0
-	if key := sec.Get("Modulation"); key != nil && key.Value != "" {
-		modulation, err := strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse modulation: %w", err)
-		}
-		note.Modulation = modulation
+	if modulation, err := optionalFloat(sec, "Modulation"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse modulation: %w", err)
+	} else if modulation != nil {
+		note.Modulation = *modulation
 	}
 
 	// PreUtterance
-	note.Preutterance = nil
-	if key := sec.Get("PreUtterance"); key != nil && key.Value != "" {
-		preUtterance, err := strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse pre-utterance: %w", err)
-		}
-		note.Preutterance = &preUtterance
+	if note.Preutterance, err = optionalFloat(sec, "PreUtterance"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse pre-utterance: %w", err)
 	}
 
-	if key := sec.Get("@preuttr"); key != nil && key.Value != "" {
-		preUtterance, err := strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse pre-utterance override: %w", err)
-		}
-		note.PreutteranceOverride = &preUtterance
+	if note.PreutteranceOverride, err = optionalFloat(sec, "@preuttr"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse pre-utterance override: %w", err)
 	}
 
 	// VoiceOverlap
-	note.VoiceOverlap = nil
-	if key := sec.Get("VoiceOverlap"); key != nil && key.Value != "" {
-		voiceOverlap, err := strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse voice overlap: %w", err)
-		}
-		note.VoiceOverlap = &voiceOverlap
+	if note.VoiceOverlap, err = optionalFloat(sec, "VoiceOverlap"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse voice overlap: %w", err)
 	}
 
 	// StartPoint
 	note.StartPoint = 0
-	if key := sec.Get("StartPoint"); key != nil && key.Value != "" {
-		note.StartPoint, err = strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse start point: %w", err)
-		}
+	if startPoint, err := optionalFloat(sec, "StartPoint"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse start point: %w", err)
+	} else if startPoint != nil {
+		note.StartPoint = *startPoint
 	}
 
 	// UST 2.0 overrides
-	if key := sec.Get("@overlap"); key != nil && key.Value != "" {
-		overlap, err := strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse overlap override: %w", err)
-		}
-		note.VoiceOverlapOverride = &overlap
+	if note.VoiceOverlapOverride, err = optionalFloat(sec, "@overlap"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse overlap override: %w", err)
 	}
-	if key := sec.Get("@stpoint"); key != nil && key.Value != "" {
-		startPoint, err := strconv.ParseFloat(key.Value, 64)
-		if err != nil {
-			return Note{}, fmt.Errorf("failed to parse start-point override: %w", err)
-		}
-		note.StartPointOverride = &startPoint
+	if note.StartPointOverride, err = optionalFloat(sec, "@stpoint"); err != nil {
+		return Note{}, fmt.Errorf("failed to parse start-point override: %w", err)
 	}
 
 	// Envelope
