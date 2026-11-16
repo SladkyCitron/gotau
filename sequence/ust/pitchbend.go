@@ -86,7 +86,7 @@ func parsePitchSamples(s string) ([]float64, error) {
 		if strings.TrimSpace(part) == "" {
 			continue
 		}
-		pitch, err := strconv.ParseFloat(strings.TrimSpace(part), 64)
+		pitch, err := parseFiniteFloat(strings.TrimSpace(part))
 		if err != nil {
 			return nil, err
 		}
