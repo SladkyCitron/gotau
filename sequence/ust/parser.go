@@ -122,7 +122,8 @@ func parse(data []byte) (*File, error) {
 			file.Notes = slices.Insert(file.Notes, noteIndex, note)
 			noteIndex++
 		case "#DELETE":
-			if noteIndex < len(file.Notes) {
+			if noteIndex > 0 {
+				noteIndex--
 				file.Notes = slices.Delete(file.Notes, noteIndex, noteIndex+1)
 			}
 		default:

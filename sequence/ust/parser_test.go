@@ -218,12 +218,6 @@ NoteNum=64
 			NoteNum:   midi.Note(62),
 			Intensity: 100,
 		},
-		{
-			Length:    960,
-			Lyric:     "u",
-			NoteNum:   midi.Note(64),
-			Intensity: 100,
-		},
 	}, file.Notes)
 }
 
