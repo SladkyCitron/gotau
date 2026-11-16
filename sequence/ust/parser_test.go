@@ -361,7 +361,7 @@ NoteNum=128
 `)
 	file, err := ust.Parse(data)
 	assert.Nil(t, file)
-	assert.ErrorContains(t, err, "invalid note number: 128")
+	assert.ErrorContains(t, err, "invalid MIDI note number: 128")
 }
 
 func TestDecodeInvalidLength(t *testing.T) {
@@ -373,7 +373,7 @@ NoteNum=60
 `)
 	file, err := ust.Parse(data)
 	assert.Nil(t, file)
-	assert.ErrorContains(t, err, "invalid length: -1")
+	assert.ErrorContains(t, err, "invalid note length: -1")
 }
 
 func FuzzParse(f *testing.F) {
