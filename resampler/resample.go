@@ -52,7 +52,7 @@ type ResampleConfig struct {
 	// Pitch is the MIDI note number to resample to.
 	Pitch midi.Note
 
-	// Velocity is the velocity. It is a value between 0 and 1, where 1 is the maximum velocity.
+	// Velocity is the UTAU velocity percentage (100 is the default).
 	Velocity float64
 
 	// Flags is a string of flags to pass to the resampler. These can be resampler-specific.
