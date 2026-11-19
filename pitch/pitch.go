@@ -4,7 +4,40 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"gitlab.com/gomidi/midi/v2"
 )
+
+// Note names. These correspond to [NoteFormat]s.
+var noteNames = map[byte][12]string{
+	's': {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"},
+	'f': {"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"},
+}
+
+// AppendNote appends the MIDI note to the provided byte slice, according to the format fmt.
+//
+// The format fmt is one of:
+//
+//   - 's' for sharps (e.g. C#4)
+//   - 'f' for flats (e.g. Db4)
+func AppendNote(dst []byte, note midi.Note, fmt byte) []byte {
+	if fmt != 's' && fmt != 'f' {
+		fmt = 's' // default to sharps if invalid format is provided
+	}
+	dst = append(dst, noteNames[fmt][note%12]...)
+	dst = strconv.AppendInt(dst, int64(note/12), 10)
+	return dst
+}
+
+// FormatNote converts the MIDI note to a string, according to the format fmt.
+//
+// The format fmt is one of:
+//
+//   - 's' for sharps (e.g. C#4)
+//   - 'f' for flats (e.g. Db4)
+func FormatNote(note midi.Note, fmt byte) string {
+	return string(AppendNote(make([]byte, 0, 4), note, fmt))
+}
 
 // EncodeResamplerPitchBendString encodes a pitch bend curve into the UTAU resampler pitch bend string format.
 func EncodeResamplerPitchBendString(x []float64) string {

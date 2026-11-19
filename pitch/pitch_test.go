@@ -8,6 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFormatNote(t *testing.T) {
+	assert.Equal(t, "C#4", pitch.FormatNote(61, 's'))
+	assert.Equal(t, "Db4", pitch.FormatNote(61, 'f'))
+	assert.Equal(t, "C4", pitch.FormatNote(60, 's'))
+	assert.Equal(t, "C4", pitch.FormatNote(60, 'f'))
+	assert.Equal(t, "B3", pitch.FormatNote(59, 's'))
+	assert.Equal(t, "B3", pitch.FormatNote(59, 'f'))
+}
+
 func TestEncodeResamplerPitchBendString(t *testing.T) {
 	tests := []struct {
 		name string
