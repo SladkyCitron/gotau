@@ -138,46 +138,46 @@ func parseNote(s string) (midi.Note, error) {
 		return 0, fmt.Errorf("invalid octave: %q", m[3])
 	}
 
-	if octave > 10 {
-		octave = 10
-	}
+	var semitone int
 
-	var note uint8
 	switch base + accidental {
 	case "C":
-		note = 0
+		semitone = 0
 	case "C#", "Db":
-		note = 1
+		semitone = 1
 	case "D":
-		note = 2
+		semitone = 2
 	case "D#", "Eb":
-		note = 3
+		semitone = 3
 	case "E":
-		note = 4
+		semitone = 4
 	case "F":
-		note = 5
+		semitone = 5
 	case "F#", "Gb":
-		note = 6
+		semitone = 6
 	case "G":
-		note = 7
+		semitone = 7
 	case "G#", "Ab":
-		note = 8
+		semitone = 8
 	case "A":
-		note = 9
-	case "A#", "Bb", "Hb": // H = B in German notation
-		note = 10
-	case "B", "H": // H = B in German notation
-		note = 11
+		semitone = 9
+	case "A#", "Bb":
+		semitone = 10
+	case "B", "H":
+		semitone = 11
+	case "Hb":
+		semitone = 10
 	default:
 		return 0, fmt.Errorf("invalid base: %q", base+accidental)
 	}
-	if octave != 0 {
-		note += uint8(12 * octave)
-		if note > 127 {
-			note -= 12
-		}
+
+	midiNote := 12*(octave+1) + semitone
+
+	if midiNote < 0 || midiNote > 127 {
+		return 0, fmt.Errorf("note out of MIDI range: %q", s)
 	}
-	return midi.Note(note), nil
+
+	return midi.Note(midiNote), nil
 }
 
 // Encode encodes and writes the prefixes to the provided [io.Writer].
