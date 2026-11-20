@@ -53,7 +53,7 @@ func PrefixMapWithDelimiter(delim rune) PrefixMapOption {
 }
 
 // PrefixMapWithComment specifies the comment character to use when reading the prefix.map file.
-// Lines beginning with this character without preceding whitespace will be ignored.
+// Lines beginning with this character with or without preceding whitespace will be ignored.
 func PrefixMapWithComment(comment rune) PrefixMapOption {
 	return func(cfg *prefixMapConfig) {
 		cfg.comment = comment
