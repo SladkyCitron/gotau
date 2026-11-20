@@ -25,7 +25,7 @@ func AppendNote(dst []byte, note midi.Note, fmt byte) []byte {
 		fmt = 's' // default to sharps if invalid format is provided
 	}
 	dst = append(dst, noteNames[fmt][note%12]...)
-	dst = strconv.AppendInt(dst, int64(note/12)-1, 10)
+	dst = strconv.AppendInt(dst, int64(note/12), 10)
 	return dst
 }
 
