@@ -200,6 +200,13 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
 	newWriter := w
 	if cfg.encoding != encoding.Nop {
 		newWriter = transform.NewWriter(w, cfg.encoding.NewEncoder())
+		defer func() {
+			// *transform.Writer implements io.Closer so this is safe to do without the ok check
+			closer := newWriter.(io.Closer)
+			if err := closer.Close(); err != nil {
+				panic(fmt.Errorf("failed to close prefix.map writer: %w", err))
+			}
+		}()
 	}
 	var buf bytes.Buffer
 	buf.Grow(64)                  // preallocate some space
