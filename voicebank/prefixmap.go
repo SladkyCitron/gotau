@@ -53,7 +53,7 @@ func PrefixMapWithDelimiter(delim rune) PrefixMapOption {
 }
 
 // PrefixMapWithComment specifies the comment character to use when reading the prefix.map file.
-// Lines beginning with this character without preceding whitespace will be ignored.
+// Lines beginning with this character with or without preceding whitespace will be ignored.
 func PrefixMapWithComment(comment rune) PrefixMapOption {
 	return func(cfg *prefixMapConfig) {
 		cfg.comment = comment
@@ -112,6 +112,10 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 			return nil, fmt.Errorf("voicebank prefix.map: invalid note %q: %w", parts[0], err)
 		}
 
+		if _, exists := prefixMap[note]; exists {
+			return nil, fmt.Errorf("voicebank prefix.map: duplicate note %q", parts[0])
+		}
+
 		prefixMap[note] = Prefix{
 			Prefix: string(bytes.TrimSpace(parts[1])),
 			Suffix: string(bytes.TrimSpace(parts[2])),
@@ -123,7 +127,7 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 // we use A-H to support German notation; H means B natural
 // https://en.wikipedia.org/wiki/Musical_note#B%E2%99%AD,_B_and_H
 
-var noteRe = regexp.MustCompile(`(?i)([A-H])([#b])?-?(\d+)`)
+var noteRe = regexp.MustCompile(`(?i)^([A-H])([#b])?(-?\d+)$`)
 
 func parseNote(s string) (midi.Note, error) {
 	m := noteRe.FindStringSubmatch(s)
@@ -138,46 +142,46 @@ func parseNote(s string) (midi.Note, error) {
 		return 0, fmt.Errorf("invalid octave: %q", m[3])
 	}
 
-	if octave > 10 {
-		octave = 10
-	}
+	var semitone int
 
-	var note uint8
 	switch base + accidental {
 	case "C":
-		note = 0
+		semitone = 0
 	case "C#", "Db":
-		note = 1
+		semitone = 1
 	case "D":
-		note = 2
+		semitone = 2
 	case "D#", "Eb":
-		note = 3
+		semitone = 3
 	case "E":
-		note = 4
+		semitone = 4
 	case "F":
-		note = 5
+		semitone = 5
 	case "F#", "Gb":
-		note = 6
+		semitone = 6
 	case "G":
-		note = 7
+		semitone = 7
 	case "G#", "Ab":
-		note = 8
+		semitone = 8
 	case "A":
-		note = 9
-	case "A#", "Bb", "Hb": // H = B in German notation
-		note = 10
-	case "B", "H": // H = B in German notation
-		note = 11
+		semitone = 9
+	case "A#", "Bb":
+		semitone = 10
+	case "B", "H":
+		semitone = 11
+	case "Hb":
+		semitone = 10
 	default:
 		return 0, fmt.Errorf("invalid base: %q", base+accidental)
 	}
-	if octave != 0 {
-		note += uint8(12 * octave)
-		if note > 127 {
-			note -= 12
-		}
+
+	midiNote := 12*octave + semitone
+
+	if midiNote < 0 || midiNote > 127 {
+		return 0, fmt.Errorf("note out of MIDI range: %q", s)
 	}
-	return midi.Note(note), nil
+
+	return midi.Note(midiNote), nil
 }
 
 // Encode encodes and writes the prefixes to the provided [io.Writer].
@@ -200,6 +204,13 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
 	newWriter := w
 	if cfg.encoding != encoding.Nop {
 		newWriter = transform.NewWriter(w, cfg.encoding.NewEncoder())
+		defer func() {
+			// *transform.Writer implements io.Closer so this is safe to do without the ok check
+			closer := newWriter.(io.Closer)
+			if err := closer.Close(); err != nil {
+				panic(fmt.Errorf("failed to close prefix.map writer: %w", err))
+			}
+		}()
 	}
 	var buf bytes.Buffer
 	buf.Grow(64)                  // preallocate some space
