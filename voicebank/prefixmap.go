@@ -112,6 +112,10 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 			return nil, fmt.Errorf("voicebank prefix.map: invalid note %q: %w", parts[0], err)
 		}
 
+		if _, exists := prefixMap[note]; exists {
+			return nil, fmt.Errorf("voicebank prefix.map: duplicate note %q", parts[0])
+		}
+
 		prefixMap[note] = Prefix{
 			Prefix: string(bytes.TrimSpace(parts[1])),
 			Suffix: string(bytes.TrimSpace(parts[2])),
