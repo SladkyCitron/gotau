@@ -52,42 +52,30 @@ func TestDecodePrefixMapWithOpts(t *testing.T) {
 func TestDecodePrefixMapAllNotes(t *testing.T) {
 	b := []byte("C5\t\tfoo\n" +
 		"C#5\t\tfoo\n" +
-		"Db5\t\tfoo\n" +
 		"D5\t\tfoo\n" +
 		"D#5\t\tfoo\n" +
-		"Eb5\t\tfoo\n" +
 		"E5\t\tfoo\n" +
 		"F5\t\tfoo\n" +
 		"F#5\t\tfoo\n" +
-		"Gb5\t\tfoo\n" +
 		"G5\t\tfoo\n" +
 		"G#5\t\tfoo\n" +
-		"Ab5\t\tfoo\n" +
 		"A5\t\tfoo\n" +
 		"A#5\t\tfoo\n" +
-		"Bb5\t\tfoo\n" +
-		"Hb5\t\tfoo\n" +
-		"B5\t\tfoo\n" +
-		"H5\t\tfoo\n")
+		"B5\t\tfoo\n")
 
 	want := voicebank.PrefixMap{
 		midi.Note(midi.C(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.Db(5)): voicebank.Prefix{"", "foo"},
-		//midi.Note(midi.Db(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.D(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.Eb(5)): voicebank.Prefix{"", "foo"},
-		//midi.Note(midi.Eb(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.E(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.F(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.Gb(5)): voicebank.Prefix{"", "foo"},
-		//midi.Note(midi.Gb(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.G(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.Ab(5)): voicebank.Prefix{"", "foo"},
-		//midi.Note(midi.Ab(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.A(5)):  voicebank.Prefix{"", "foo"},
 		midi.Note(midi.Bb(5)): voicebank.Prefix{"", "foo"},
-		//midi.Note(midi.Bb(5)):  voicebank.Prefix{"", "foo"},
-		midi.Note(midi.B(5)): voicebank.Prefix{"", "foo"},
+		midi.Note(midi.B(5)):  voicebank.Prefix{"", "foo"},
 	}
 
 	prefixmap, err := voicebank.ParsePrefixMap(b)
@@ -105,9 +93,33 @@ func TestDecodePrefixMapInvalidLine(t *testing.T) {
 }
 
 func TestDecodePrefixMapInvalidNote(t *testing.T) {
-	prefixmap, err := voicebank.ParsePrefixMap([]byte("XX\t\tfoo\n"))
-	assert.Nil(t, prefixmap)
-	assert.ErrorContains(t, err, "invalid note format")
+	tests := []struct {
+		name    string
+		note    string
+		wantErr string
+	}{
+		{name: "empty", note: "", wantErr: "invalid note format"},
+		{name: "invalid base", note: "XX", wantErr: "invalid note format"},
+		{name: "base only", note: "C", wantErr: "invalid note format"},
+		{name: "missing octave", note: "C#", wantErr: "invalid note format"},
+		{name: "double accidental", note: "C##5", wantErr: "invalid note format"},
+		{name: "trailing data", note: "C5extra", wantErr: "invalid note format"},
+		{name: "internal whitespace", note: "C 5", wantErr: "invalid note format"},
+		{name: "unsupported base", note: "I5", wantErr: "invalid note format"},
+		{name: "unsupported flat", note: "Cb5", wantErr: "invalid base"},
+		{name: "unsupported sharp", note: "H#5", wantErr: "invalid base"},
+		{name: "negative below range", note: "C-2", wantErr: "note out of MIDI range"},
+		{name: "above range", note: "C11", wantErr: "note out of MIDI range"},
+		{name: "octave overflow", note: "C999999999999999999999999", wantErr: "invalid octave"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prefixmap, err := voicebank.ParsePrefixMap([]byte(tt.note + "\t\tfoo\n"))
+			assert.Nil(t, prefixmap)
+			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
 }
 
 func TestPrefixMapRoundTrip(t *testing.T) {
