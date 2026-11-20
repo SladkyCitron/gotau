@@ -228,7 +228,7 @@ func (f *File) parseNote(sec ini.Section) (Note, error) {
 	}
 
 	// Velocity
-	note.Velocity = 0
+	note.Velocity = 100
 	if velocity, err := optionalFloat(sec, "Velocity"); err != nil {
 		return Note{}, fmt.Errorf("failed to parse velocity: %w", err)
 	} else if velocity != nil {

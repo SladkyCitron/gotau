@@ -17,6 +17,7 @@ import (
 	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/resampler"
 	"github.com/SladkyCitron/gotau/sequence"
+	"github.com/SladkyCitron/gotau/umath"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"github.com/SladkyCitron/gotau/voicebank/otoini"
 	"github.com/SladkyCitron/resona/afmt"
@@ -212,7 +213,7 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 			silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
 			buf := make([]float32, int(silenceSec*float64(s.sr)))
 			s.renderBuf = append(s.renderBuf, buf...)
-			s.sched.tickPos += note.Duration
+			s.sched.tickPos = note.Position + note.Duration
 			return nil
 		}
 
@@ -220,7 +221,7 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 			return fmt.Errorf("failed to render phoneme %q: %w", otoEntry.Alias, err)
 		}
 	}
-	s.sched.tickPos += note.Duration
+	s.sched.tickPos = note.Position + note.Duration
 	return nil
 }
 
@@ -235,36 +236,35 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 		silenceSec := s.sched.ticksToSeconds(note.Position-s.sched.tickPos) - preutterSec
 		silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
 		buf := make([]float32, int(silenceSec*float64(s.sr)))
-		//TODO: we'll have to probably concatenate this silence buffer with the concatenator instead of append
-		s.renderBuf = append(s.renderBuf, buf...)
+		var err error
+		s.renderBuf, err = s.cat.Concatenate(s.renderBuf, buf, concat.ConcatenateConfig{
+			Duration:    startTick - s.sched.tickPos,
+			Tempo:       s.sched.bpm,
+			Resolution:  s.sched.tpqn,
+			AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
+			Envelope: umath.Envelope{
+				{X: 0, Y: 0},
+				{X: 0, Y: 0},
+				{X: 0, Y: 0},
+				{X: 0, Y: 0},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to concatenate silence: %w", err)
+		}
 		s.sched.tickPos = startTick
 	}
 
-	curNoteStartSec := s.sched.ticksToSeconds(note.Position) - preutterSec
-	curNoteEndSec := s.sched.ticksToSeconds(note.Position + note.Duration)
-	// the current note wants to cut in exactly this many seconds
-	nextNoteCutInSec := curNoteEndSec - nextPreutterMs/1000
-
-	// determine true rendering length based on timing and preutterance
-	var trueLength float64
-	if next != nil && nextNoteCutInSec < curNoteStartSec {
-		trueLength = 0
-	} else if next != nil {
-		trueLength = nextNoteCutInSec - curNoteStartSec
-	} else {
-		trueLength = s.sched.ticksToSeconds(note.Duration) + preutterSec
-	}
-
-	trueLength = math.Max(0, trueLength) // guard to prevent runtime panics
-	trueLengthMs := trueLength * 1000    // milliseconds
+	durationMs := s.sched.ticksToSeconds(note.Duration) * 1000
+	timing := CalculateResamplerTiming(otoEntry, note, durationMs, preutterMs, next, nextPreutterMs, nextOverlap)
+	pitchLeadingMs := timing.Leading
 
 	// generate pitch bend curve
 	// the timing math is probably wrong, thus the NaNs
 	// also we'll probably need to lerp the pitches with the previous ones and also crossfade them with the prev note's ones
 	const pitchIntervalTicks = 5
-	pitchLeadingMs := preutterMs * math.Pow(2, 1-note.Velocity/100)
 	positionMs := s.sched.ticksToSeconds(note.Position) * 1000
-	pitchCountMs := (positionMs + trueLengthMs) - (positionMs - pitchLeadingMs)
+	pitchCountMs := (positionMs + timing.Length) - (positionMs - pitchLeadingMs)
 	pitchCount := int(math.Ceil(float64(s.sched.secondsToTicks(pitchCountMs/1000)) / 5))
 	pitchCount = max(0, pitchCount)
 	pitchBend := make([]float64, pitchCount)
@@ -280,15 +280,13 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 	}
 
 	resampleCfg := resampler.ResampleConfig{
-		Pitch:    note.Note,
-		Velocity: note.Velocity,
-		Flags:    note.Flags,
-		Offset:   otoEntry.Offset,
-		// this math below is only for the resampler, not the concatenator
-		// rounds up to the nearest 50ms
-		Length:      math.Ceil((trueLengthMs+s.getStartPoint(note)+25)/50) * 50,
-		Consonant:   otoEntry.Consonant,
-		Cutoff:      otoEntry.Cutoff,
+		Pitch:       note.Note,
+		Velocity:    note.Velocity,
+		Flags:       note.Flags,
+		Offset:      timing.Offset,
+		Length:      timing.Length,
+		Consonant:   timing.Consonant,
+		Cutoff:      timing.Cutoff,
 		Intensity:   note.Intensity,
 		Modulation:  note.Modulation,
 		Tempo:       s.sched.bpm,
@@ -463,6 +461,10 @@ func (s *Synth) getPreutter(otoEntry otoini.Entry, note sequence.Note) float64 {
 }
 
 func (s *Synth) getStartPoint(note sequence.Note) float64 {
+	return effectiveStartPoint(note)
+}
+
+func effectiveStartPoint(note sequence.Note) float64 {
 	if note.StartPointOverride != nil {
 		return *note.StartPointOverride
 	}
@@ -477,6 +479,68 @@ func (s *Synth) getOverlap(otoEntry otoini.Entry, note sequence.Note) float64 {
 		return *note.VoiceOverlap
 	}
 	return otoEntry.Overlap
+}
+
+// ResamplerTiming contains the timing parameters for the resampler.
+//
+// It's used internally by [Synth] to determine how to render the note with the
+// correct timing and pitch, but it's also exported for testing purposes.
+type ResamplerTiming struct {
+	Offset    float64
+	Length    float64
+	Consonant float64
+	Cutoff    float64
+	Leading   float64
+	SkipOver  float64
+}
+
+// CalculateResamplerTiming calculates the timing parameters for the resampler
+// based on the given note and its oto entry.
+//
+// It's used internally by [Synth] to determine how to render the note with the
+// correct timing and pitch, but it's also exported for testing purposes.
+func CalculateResamplerTiming(
+	otoEntry otoini.Entry,
+	note sequence.Note,
+	durationMs float64,
+	preutterMs float64,
+	next *sequence.Note,
+	nextPreutterMs float64,
+	nextOverlapMs float64,
+) ResamplerTiming {
+	stretchRatio := math.Pow(2, 1-note.Velocity/100)
+	pulledMs := math.Round((preutterMs/stretchRatio-otoEntry.Preutterance)*1000) / 1000
+	pulledMs = math.Max(0, math.Min(pulledMs, math.Max(0, otoEntry.Offset)))
+
+	offset := otoEntry.Offset - pulledMs
+	leading := (otoEntry.Preutterance + pulledMs) * stretchRatio
+	skipOver := leading - preutterMs
+	consonant := otoEntry.Consonant + pulledMs
+	cutoff := otoEntry.Cutoff
+	if cutoff < 0 {
+		cutoff -= pulledMs
+	}
+
+	durCorrection := preutterMs
+	if next != nil && next.Position == note.Position+note.Duration {
+		tailIntrude := math.Max(nextPreutterMs-nextOverlapMs, 0)
+		tailOverlap := math.Max(nextOverlapMs, 0)
+		durCorrection = preutterMs - tailIntrude + tailOverlap
+	}
+
+	length := durationMs + durCorrection + skipOver + effectiveStartPoint(note)
+	length = math.Max(length, consonant)
+	length = math.Ceil(length/50+0.5) * 50
+	length = math.Max(0, length)
+
+	return ResamplerTiming{
+		Offset:    offset,
+		Length:    length,
+		Consonant: consonant,
+		Cutoff:    cutoff,
+		Leading:   leading,
+		SkipOver:  skipOver,
+	}
 }
 
 func (s *Synth) debugLog(msg string, note sequence.Note) {

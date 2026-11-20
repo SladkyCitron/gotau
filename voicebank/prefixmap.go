@@ -10,16 +10,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SladkyCitron/gotau/pitch"
 	"gitlab.com/gomidi/midi/v2"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
-)
-
-type NoteFormat uint8
-
-const (
-	NoteFormatSharps NoteFormat = iota
-	NoteFormatFlats
 )
 
 // PrefixMap represents the prefix.map configuration in an UTAU voicebank.
@@ -38,7 +32,7 @@ type prefixMapConfig struct {
 	delimiter rune
 	comment   rune
 	sortFunc  func(a, b midi.Note) int
-	notefmt   NoteFormat
+	notefmt   byte
 }
 
 // PrefixMapOption represents an option for passing into prefix.map-related functions and methods.
@@ -78,7 +72,7 @@ func PrefixMapWithSort(cmpFunc func(a, b midi.Note) int) PrefixMapOption {
 // and accidentals in the prefix.map file.
 //
 // By default, accidentals are written using sharps (e.g. C#, D#).
-func PrefixMapWithNoteFormat(notefmt NoteFormat) PrefixMapOption {
+func PrefixMapWithNoteFormat(notefmt byte) PrefixMapOption {
 	return func(cfg *prefixMapConfig) {
 		cfg.notefmt = notefmt
 	}
@@ -191,7 +185,7 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
 	cfg := &prefixMapConfig{
 		encoding:  encoding.Nop,
 		delimiter: '\t',
-		notefmt:   NoteFormatSharps,
+		notefmt:   's',
 	}
 
 	for _, opt := range opts {
@@ -208,14 +202,15 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
 		newWriter = transform.NewWriter(w, cfg.encoding.NewEncoder())
 	}
 	var buf bytes.Buffer
-	buf.Grow(16) // preallocate some space
+	buf.Grow(64)                  // preallocate some space
+	noteTmp := make([]byte, 0, 4) // scratch buffer for note string
 
 	for _, note := range notes {
 		prefix := pm[note]
 
 		buf.Reset()
 
-		buf.WriteString(formatNote(note, cfg.notefmt))
+		buf.Write(pitch.AppendNote(noteTmp[:0], note, cfg.notefmt))
 		buf.WriteRune(cfg.delimiter)
 		if prefix.Prefix != "" {
 			buf.WriteString(prefix.Prefix)
@@ -232,14 +227,4 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
 	}
 
 	return nil
-}
-
-// Note names. These correspond to [NoteFormat]s.
-var noteNames = [...][12]string{
-	{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"},
-	{"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"},
-}
-
-func formatNote(note midi.Note, notefmt NoteFormat) string {
-	return noteNames[notefmt][note%12] + strconv.FormatInt(int64(note/12), 10)
 }

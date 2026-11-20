@@ -89,6 +89,7 @@ func TestDecode(t *testing.T) {
 						Lyric:      "a",
 						NoteNum:    midi.Note(69),
 						Intensity:  100,
+						Velocity:   100,
 						Modulation: 0,
 					},
 				},
@@ -211,12 +212,14 @@ NoteNum=64
 			Lyric:     "a",
 			NoteNum:   midi.Note(60),
 			Intensity: 100,
+			Velocity:  100,
 		},
 		{
 			Length:    240,
 			Lyric:     "i",
 			NoteNum:   midi.Note(62),
 			Intensity: 100,
+			Velocity:  100,
 		},
 	}, file.Notes)
 }
