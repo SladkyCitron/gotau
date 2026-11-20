@@ -8,7 +8,7 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
-// Note names. These correspond to [NoteFormat]s.
+// Note names for the supported sharp and flat formats.
 var noteNames = map[byte][12]string{
 	's': {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"},
 	'f': {"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"},
