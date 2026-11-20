@@ -32,6 +32,9 @@ func TestCalculateResamplerTiming(t *testing.T) {
 	assert.Equal(t, 80.0, moTiming.Consonant)
 	assert.Equal(t, 49.0, moTiming.Cutoff)
 
+	moWithStartPoint := gotau.CalculateResamplerTiming(mo, sequence.Note{Position: 0, Duration: 240, Velocity: 100, StartPoint: 20}, 170.45454545454547, 30, &nextA, 5, 20)
+	assert.Equal(t, 300.0, moWithStartPoint.Length)
+
 	nextMo := sequence.Note{Position: 480, Duration: 240, Velocity: 100}
 	aTiming := gotau.CalculateResamplerTiming(a, sequence.Note{Position: 240, Duration: 240, Velocity: 100}, 170.45454545454547, 5, &nextMo, 30, 14)
 	assert.Equal(t, 24.0, aTiming.Offset)

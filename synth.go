@@ -461,6 +461,10 @@ func (s *Synth) getPreutter(otoEntry otoini.Entry, note sequence.Note) float64 {
 }
 
 func (s *Synth) getStartPoint(note sequence.Note) float64 {
+	return effectiveStartPoint(note)
+}
+
+func effectiveStartPoint(note sequence.Note) float64 {
 	if note.StartPointOverride != nil {
 		return *note.StartPointOverride
 	}
@@ -524,7 +528,7 @@ func CalculateResamplerTiming(
 		durCorrection = preutterMs - tailIntrude + tailOverlap
 	}
 
-	length := durationMs + durCorrection + skipOver
+	length := durationMs + durCorrection + skipOver + effectiveStartPoint(note)
 	length = math.Max(length, consonant)
 	length = math.Ceil(length/50+0.5) * 50
 	length = math.Max(0, length)
