@@ -17,6 +17,7 @@ import (
 	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/resampler"
 	"github.com/SladkyCitron/gotau/sequence"
+	"github.com/SladkyCitron/gotau/umath"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"github.com/SladkyCitron/gotau/voicebank/otoini"
 	"github.com/SladkyCitron/resona/afmt"
@@ -235,8 +236,22 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 		silenceSec := s.sched.ticksToSeconds(note.Position-s.sched.tickPos) - preutterSec
 		silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
 		buf := make([]float32, int(silenceSec*float64(s.sr)))
-		//TODO: we'll have to probably concatenate this silence buffer with the concatenator instead of append
-		s.renderBuf = append(s.renderBuf, buf...)
+		var err error
+		s.renderBuf, err = s.cat.Concatenate(s.renderBuf, buf, concat.ConcatenateConfig{
+			Duration:    startTick - s.sched.tickPos,
+			Tempo:       s.sched.bpm,
+			Resolution:  s.sched.tpqn,
+			AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
+			Envelope: umath.Envelope{
+				{X: 0, Y: 0},
+				{X: 0, Y: 0},
+				{X: 0, Y: 0},
+				{X: 0, Y: 0},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to concatenate silence: %w", err)
+		}
 		s.sched.tickPos = startTick
 	}
 
