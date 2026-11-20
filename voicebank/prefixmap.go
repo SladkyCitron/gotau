@@ -123,7 +123,7 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 // we use A-H to support German notation; H means B natural
 // https://en.wikipedia.org/wiki/Musical_note#B%E2%99%AD,_B_and_H
 
-var noteRe = regexp.MustCompile(`(?i)([A-H])([#b])?-?(\d+)`)
+var noteRe = regexp.MustCompile(`(?i)^([A-H])([#b])?(-?\d+)$`)
 
 func parseNote(s string) (midi.Note, error) {
 	m := noteRe.FindStringSubmatch(s)
