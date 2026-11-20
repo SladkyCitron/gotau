@@ -175,7 +175,7 @@ func parseNote(s string) (midi.Note, error) {
 		return 0, fmt.Errorf("invalid base: %q", base+accidental)
 	}
 
-	midiNote := 12*octave + semitone
+	midiNote := 12*(octave+1) + semitone
 
 	if midiNote < 0 || midiNote > 127 {
 		return 0, fmt.Errorf("note out of MIDI range: %q", s)

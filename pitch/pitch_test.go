@@ -9,12 +9,12 @@ import (
 )
 
 func TestFormatNote(t *testing.T) {
-	assert.Equal(t, "C#5", pitch.FormatNote(61, 's'))
-	assert.Equal(t, "Db5", pitch.FormatNote(61, 'f'))
-	assert.Equal(t, "C5", pitch.FormatNote(60, 's'))
-	assert.Equal(t, "C5", pitch.FormatNote(60, 'f'))
-	assert.Equal(t, "B4", pitch.FormatNote(59, 's'))
-	assert.Equal(t, "B4", pitch.FormatNote(59, 'f'))
+	assert.Equal(t, "C#4", pitch.FormatNote(61, 's'))
+	assert.Equal(t, "Db4", pitch.FormatNote(61, 'f'))
+	assert.Equal(t, "C4", pitch.FormatNote(60, 's'))
+	assert.Equal(t, "C4", pitch.FormatNote(60, 'f'))
+	assert.Equal(t, "B3", pitch.FormatNote(59, 's'))
+	assert.Equal(t, "B3", pitch.FormatNote(59, 'f'))
 }
 
 func TestEncodeResamplerPitchBendString(t *testing.T) {

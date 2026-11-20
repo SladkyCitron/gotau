@@ -15,9 +15,9 @@ func TestDecodePrefixMap(t *testing.T) {
 	b := []byte("C5\tpre\tsuf\nD#5\tpre\t\n# comment\nF#5\t\tsuf\n")
 
 	want := voicebank.PrefixMap{
-		midi.Note(midi.C(5)):  voicebank.Prefix{"pre", "suf"},
-		midi.Note(midi.Eb(5)): voicebank.Prefix{"pre", ""},
-		midi.Note(midi.Gb(5)): voicebank.Prefix{"", "suf"},
+		midi.Note(midi.C(6)):  voicebank.Prefix{"pre", "suf"},
+		midi.Note(midi.Eb(6)): voicebank.Prefix{"pre", ""},
+		midi.Note(midi.Gb(6)): voicebank.Prefix{"", "suf"},
 	}
 
 	prefixmap, err := voicebank.ParsePrefixMap(b)
@@ -32,9 +32,9 @@ func TestDecodePrefixMapWithOpts(t *testing.T) {
 	b := []byte("C5 pre suf\nD#5 pre \n; comment\nF#5  suf\n")
 
 	want := voicebank.PrefixMap{
-		midi.Note(midi.C(5)):  voicebank.Prefix{"pre", "suf"},
-		midi.Note(midi.Eb(5)): voicebank.Prefix{"pre", ""},
-		midi.Note(midi.Gb(5)): voicebank.Prefix{"", "suf"},
+		midi.Note(midi.C(6)):  voicebank.Prefix{"pre", "suf"},
+		midi.Note(midi.Eb(6)): voicebank.Prefix{"pre", ""},
+		midi.Note(midi.Gb(6)): voicebank.Prefix{"", "suf"},
 	}
 
 	prefixmap, err := voicebank.ParsePrefixMap(b,
@@ -64,18 +64,18 @@ func TestDecodePrefixMapAllNotes(t *testing.T) {
 		"B5\t\tfoo\n")
 
 	want := voicebank.PrefixMap{
-		midi.Note(midi.C(5)):  voicebank.Prefix{"", "foo"},
-		midi.Note(midi.Db(5)): voicebank.Prefix{"", "foo"},
-		midi.Note(midi.D(5)):  voicebank.Prefix{"", "foo"},
-		midi.Note(midi.Eb(5)): voicebank.Prefix{"", "foo"},
-		midi.Note(midi.E(5)):  voicebank.Prefix{"", "foo"},
-		midi.Note(midi.F(5)):  voicebank.Prefix{"", "foo"},
-		midi.Note(midi.Gb(5)): voicebank.Prefix{"", "foo"},
-		midi.Note(midi.G(5)):  voicebank.Prefix{"", "foo"},
-		midi.Note(midi.Ab(5)): voicebank.Prefix{"", "foo"},
-		midi.Note(midi.A(5)):  voicebank.Prefix{"", "foo"},
-		midi.Note(midi.Bb(5)): voicebank.Prefix{"", "foo"},
-		midi.Note(midi.B(5)):  voicebank.Prefix{"", "foo"},
+		midi.Note(midi.C(6)):  voicebank.Prefix{"", "foo"},
+		midi.Note(midi.Db(6)): voicebank.Prefix{"", "foo"},
+		midi.Note(midi.D(6)):  voicebank.Prefix{"", "foo"},
+		midi.Note(midi.Eb(6)): voicebank.Prefix{"", "foo"},
+		midi.Note(midi.E(6)):  voicebank.Prefix{"", "foo"},
+		midi.Note(midi.F(6)):  voicebank.Prefix{"", "foo"},
+		midi.Note(midi.Gb(6)): voicebank.Prefix{"", "foo"},
+		midi.Note(midi.G(6)):  voicebank.Prefix{"", "foo"},
+		midi.Note(midi.Ab(6)): voicebank.Prefix{"", "foo"},
+		midi.Note(midi.A(6)):  voicebank.Prefix{"", "foo"},
+		midi.Note(midi.Bb(6)): voicebank.Prefix{"", "foo"},
+		midi.Note(midi.B(6)):  voicebank.Prefix{"", "foo"},
 	}
 
 	prefixmap, err := voicebank.ParsePrefixMap(b)
