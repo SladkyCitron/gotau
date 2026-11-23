@@ -11,7 +11,7 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
-func TestDecode(t *testing.T) {
+func TestParse(t *testing.T) {
 	tests := []struct {
 		name         string
 		expectedFile *ust.File
@@ -182,7 +182,7 @@ func TestDecode(t *testing.T) {
 	}
 }
 
-func TestDecodeUST20Operations(t *testing.T) {
+func TestParseUST20Operations(t *testing.T) {
 	data := []byte(`[#VERSION]
 UST Version2.0
 [#SETTING]
@@ -224,7 +224,7 @@ NoteNum=64
 	}, file.Notes)
 }
 
-func TestDecodeUTF8BOM(t *testing.T) {
+func TestParseUTF8BOM(t *testing.T) {
 	data := append([]byte{0xef, 0xbb, 0xbf}, []byte(`[#VERSION]
 UST Version2.0
 [#SETTING]
@@ -244,7 +244,7 @@ NoteNum=60
 	assert.Equal(t, "a", file.Notes[0].Lyric)
 }
 
-func TestDecodeUTF8WithoutCharset(t *testing.T) {
+func TestParseUTF8WithoutCharset(t *testing.T) {
 	data := []byte(`[#SETTING]
 Tempo=120
 Mode2=true
@@ -260,7 +260,7 @@ NoteNum=60
 	assert.Equal(t, "あ", file.Notes[0].Lyric)
 }
 
-func TestDecodeMode1PitchBend(t *testing.T) {
+func TestParseMode1PitchBend(t *testing.T) {
 	data := []byte(`[#SETTING]
 Tempo=120
 Mode2=false
@@ -280,7 +280,7 @@ PitchBend=0,100,-50
 	assert.Equal(t, float64(-10), file.Notes[0].PitchBend.Start.X)
 }
 
-func TestDecodeUST20Overrides(t *testing.T) {
+func TestParseUST20Overrides(t *testing.T) {
 	data := []byte(`[#VERSION]
 UST Version2.0
 [#SETTING]
@@ -306,7 +306,7 @@ StartPoint=3
 	assert.Equal(t, float64Ptr(12.25), file.Notes[0].StartPointOverride)
 }
 
-func TestDecodeShiftJISWithoutCharset(t *testing.T) {
+func TestParseShiftJISWithoutCharset(t *testing.T) {
 	lyric := string([]byte{0x82, 0xa0}) // あ in Shift-JIS
 	data := []byte(`[#SETTING]
 Tempo=120
@@ -323,7 +323,7 @@ NoteNum=60
 	assert.Equal(t, "あ", file.Notes[0].Lyric)
 }
 
-func TestDecodeExplicitCharsetTakesPrecedence(t *testing.T) {
+func TestParseExplicitCharsetTakesPrecedence(t *testing.T) {
 	data := []byte(`Charset=not-a-real-charset
 [#SETTING]
 Tempo=120
@@ -340,7 +340,7 @@ NoteNum=60
 	assert.ErrorContains(t, err, "unsupported charset: not-a-real-charset")
 }
 
-func TestDecodeInvalidTempo(t *testing.T) {
+func TestParseInvalidTempo(t *testing.T) {
 	data := []byte(`[#SETTING]
 Tempo=-1
 `)
@@ -349,7 +349,7 @@ Tempo=-1
 	assert.ErrorContains(t, err, "invalid tempo: -1")
 }
 
-func TestDecodeInvalidNoteNum(t *testing.T) {
+func TestParseInvalidNoteNum(t *testing.T) {
 	data := []byte(`[#0000]
 Length=480
 Lyric=a
@@ -361,7 +361,7 @@ NoteNum=128
 	assert.ErrorContains(t, err, "invalid MIDI note number: 128")
 }
 
-func TestDecodeInvalidLength(t *testing.T) {
+func TestParseInvalidLength(t *testing.T) {
 	data := []byte(`[#0000]
 Length=-1
 Lyric=a

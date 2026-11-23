@@ -10,7 +10,7 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
-func TestSequenceMode1PitchBend(t *testing.T) {
+func TestFile_SequenceMode1PitchBend(t *testing.T) {
 	file := &ust.File{
 		Settings: ust.Settings{
 			Tempo: 120,
@@ -52,7 +52,7 @@ func TestSequenceMode1PitchBend(t *testing.T) {
 	})
 }
 
-func TestFileSequence(t *testing.T) {
+func TestFile_Sequence(t *testing.T) {
 	preutterance := 12.5
 	preutteranceOverride := 6.25
 	voiceOverlap := 8.0
@@ -139,7 +139,7 @@ func TestFileSequence(t *testing.T) {
 	}, got.Notes[1].Envelope)
 }
 
-func TestFileSequenceInvalidFlags(t *testing.T) {
+func TestFile_SequenceInvalidFlags(t *testing.T) {
 	file := &ust.File{
 		Settings: ust.Settings{Tempo: 120},
 		Notes: []ust.Note{
@@ -153,7 +153,7 @@ func TestFileSequenceInvalidFlags(t *testing.T) {
 	assert.Equal(t, sequence.Sequence{}, got)
 }
 
-func TestFileSequenceMode2PitchBend(t *testing.T) {
+func TestFile_SequenceMode2PitchBend(t *testing.T) {
 	file := &ust.File{
 		Settings: ust.Settings{
 			Tempo: 120,

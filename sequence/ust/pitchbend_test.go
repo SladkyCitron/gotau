@@ -29,12 +29,12 @@ func TestParsePitchBend(t *testing.T) {
 	assert.Equal(t, []ust.PitchBendMode{"l", "s"}, pb.Modes)
 }
 
-func TestParsePitchBend_InvalidType(t *testing.T) {
+func TestParsePitchBendInvalidType(t *testing.T) {
 	_, err := ust.ParsePitchBend("not-a-number", "", "", "", "", "")
 	assert.Error(t, err)
 }
 
-func TestParsePitchBend_EmptyFields(t *testing.T) {
+func TestParsePitchBendEmptyFields(t *testing.T) {
 	pb, err := ust.ParsePitchBend("", "", "0", "10", "0", "")
 	assert.NoError(t, err)
 	assert.Equal(t, 5, pb.Type)
