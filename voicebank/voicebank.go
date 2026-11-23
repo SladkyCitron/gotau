@@ -14,6 +14,7 @@ import (
 
 	"github.com/SladkyCitron/gotau/internal/ini"
 	"github.com/SladkyCitron/gotau/voicebank/otoini"
+	"github.com/SladkyCitron/gotau/voicebank/prefixmap"
 	"github.com/SladkyCitron/resona/codec"
 	_ "github.com/SladkyCitron/resona/codec/au"
 	_ "github.com/SladkyCitron/resona/codec/qoa"
@@ -173,7 +174,7 @@ type Voicebank struct {
 
 	// PrefixMap is the voicebank's prefix.map configuration.
 	// It is only valid if the prefix.map file is present.
-	PrefixMap PrefixMap
+	PrefixMap prefixmap.PrefixMap
 
 	fsys fs.FS
 }
@@ -312,7 +313,7 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 			return nil, fmt.Errorf("voicebank: failed to open prefix.map: %w", err)
 		}
 
-		pm, err := ParsePrefixMap(b, PrefixMapWithEncoding(cfg.fileEncoding))
+		pm, err := prefixmap.Parse(b, prefixmap.WithEncoding(cfg.fileEncoding))
 		if err != nil {
 			return nil, fmt.Errorf("voicebank: failed to parse prefix.map: %w", err)
 		}

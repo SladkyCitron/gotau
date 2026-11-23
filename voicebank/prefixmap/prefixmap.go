@@ -1,4 +1,4 @@
-package voicebank
+package prefixmap
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ type Prefix struct {
 	Suffix string
 }
 
-type prefixMapConfig struct {
+type config struct {
 	encoding  encoding.Encoding
 	delimiter rune
 	comment   rune
@@ -32,52 +32,52 @@ type prefixMapConfig struct {
 	notefmt   byte
 }
 
-// PrefixMapOption represents an option for passing into prefix.map-related functions and methods.
-type PrefixMapOption func(*prefixMapConfig)
+// Option represents an option for passing into prefix.map-related functions and methods.
+type Option func(*config)
 
-// PrefixMapWithEncoding specifies the character encoding to use when reading or writing the prefix.map file.
-func PrefixMapWithEncoding(enc encoding.Encoding) PrefixMapOption {
-	return func(cfg *prefixMapConfig) {
+// WithEncoding specifies the character encoding to use when reading or writing the prefix.map file.
+func WithEncoding(enc encoding.Encoding) Option {
+	return func(cfg *config) {
 		cfg.encoding = enc
 	}
 }
 
-// PrefixMapWithDelimiter specifies the delimiter to use when reading or writing the prefix.map file.
-func PrefixMapWithDelimiter(delim rune) PrefixMapOption {
-	return func(cfg *prefixMapConfig) {
+// WithDelimiter specifies the delimiter to use when reading or writing the prefix.map file.
+func WithDelimiter(delim rune) Option {
+	return func(cfg *config) {
 		cfg.delimiter = delim
 	}
 }
 
-// PrefixMapWithComment specifies the comment character to use when reading the prefix.map file.
+// WithComment specifies the comment character to use when reading the prefix.map file.
 // Lines beginning with this character with or without preceding whitespace will be ignored.
-func PrefixMapWithComment(comment rune) PrefixMapOption {
-	return func(cfg *prefixMapConfig) {
+func WithComment(comment rune) Option {
+	return func(cfg *config) {
 		cfg.comment = comment
 	}
 }
 
-// PrefixMapWithSort enables sorting and specifies the sorting function to use when writing
+// WithSort enables sorting and specifies the sorting function to use when writing
 // the prefix.map file.
-func PrefixMapWithSort(cmpFunc func(a, b midi.Note) int) PrefixMapOption {
-	return func(cfg *prefixMapConfig) {
+func WithSort(cmpFunc func(a, b midi.Note) int) Option {
+	return func(cfg *config) {
 		cfg.sortFunc = cmpFunc
 	}
 }
 
-// PrefixMapWithNoteFormat specifies the note format to use when writing notes
+// WithNoteFormat specifies the note format to use when writing notes
 // and accidentals in the prefix.map file.
 //
 // By default, accidentals are written using sharps (e.g. C#, D#).
-func PrefixMapWithNoteFormat(notefmt byte) PrefixMapOption {
-	return func(cfg *prefixMapConfig) {
+func WithNoteFormat(notefmt byte) Option {
+	return func(cfg *config) {
 		cfg.notefmt = notefmt
 	}
 }
 
-// ParsePrefixMap parses and decodes a prefix.map file.
-func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
-	cfg := &prefixMapConfig{
+// Parse parses and decodes a prefix.map file.
+func Parse(data []byte, opts ...Option) (PrefixMap, error) {
+	cfg := &config{
 		encoding:  encoding.Nop,
 		delimiter: '\t',
 		comment:   '#',
@@ -122,8 +122,8 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 }
 
 // Encode encodes and writes the prefixes to the provided [io.Writer].
-func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
-	cfg := &prefixMapConfig{
+func (pm PrefixMap) Encode(w io.Writer, opts ...Option) error {
+	cfg := &config{
 		encoding:  encoding.Nop,
 		delimiter: '\t',
 		notefmt:   's',
