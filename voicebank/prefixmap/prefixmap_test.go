@@ -11,7 +11,7 @@ import (
 	"golang.org/x/text/encoding/japanese"
 )
 
-func TestDecodePrefixMap(t *testing.T) {
+func TestParse(t *testing.T) {
 	b := []byte("C5\tpre\tsuf\nD#5\tpre\t\n# comment\nF#5\t\tsuf\n")
 
 	want := prefixmap.PrefixMap{
@@ -28,7 +28,7 @@ func TestDecodePrefixMap(t *testing.T) {
 	assert.Equal(t, want, prefixmap)
 }
 
-func TestDecodePrefixMapWithOpts(t *testing.T) {
+func TestParseWithOpts(t *testing.T) {
 	b := []byte("C5 pre suf\nD#5 pre \n; comment\nF#5  suf\n")
 
 	want := prefixmap.PrefixMap{
@@ -49,7 +49,7 @@ func TestDecodePrefixMapWithOpts(t *testing.T) {
 	assert.Equal(t, want, prefixmap)
 }
 
-func TestDecodePrefixMapAllNotes(t *testing.T) {
+func TestParseAllNotes(t *testing.T) {
 	b := []byte("C5\t\tfoo\n" +
 		"C#5\t\tfoo\n" +
 		"D5\t\tfoo\n" +
@@ -86,13 +86,13 @@ func TestDecodePrefixMapAllNotes(t *testing.T) {
 	assert.Equal(t, want, prefixmap)
 }
 
-func TestDecodePrefixMapInvalidLine(t *testing.T) {
+func TestParseInvalidLine(t *testing.T) {
 	prefixmap, err := prefixmap.Parse([]byte("C#5\tfoo\n"))
 	assert.Nil(t, prefixmap)
 	assert.ErrorContains(t, err, "prefixmap Parse: invalid line")
 }
 
-func TestPrefixMapRoundTrip(t *testing.T) {
+func TestRoundTrip(t *testing.T) {
 	want := []byte("C5\tpre\tsuf\nD#5\tpre\t\nF#5\t\tsuf\n")
 
 	pm, err := prefixmap.Parse(want)
