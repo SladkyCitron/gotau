@@ -1,12 +1,74 @@
 package pitch
 
 import (
+	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"gitlab.com/gomidi/midi/v2"
 )
+
+// we use A-H to support German notation; H means B natural
+// https://en.wikipedia.org/wiki/Musical_note#B%E2%99%AD,_B_and_H
+
+var noteRe = regexp.MustCompile(`(?i)^([A-H])([#b])?(-?\d+)$`)
+
+func ParseNote(s string) (midi.Note, error) {
+	m := noteRe.FindStringSubmatch(s)
+	if m == nil {
+		return 0, fmt.Errorf("invalid note format: %q", s)
+	}
+
+	base := strings.ToUpper(m[1])
+	accidental := strings.ToLower(m[2])
+	octave, err := strconv.Atoi(m[3])
+	if err != nil {
+		return 0, fmt.Errorf("invalid octave: %q", m[3])
+	}
+
+	var semitone int
+
+	switch base + accidental {
+	case "C":
+		semitone = 0
+	case "C#", "Db":
+		semitone = 1
+	case "D":
+		semitone = 2
+	case "D#", "Eb":
+		semitone = 3
+	case "E":
+		semitone = 4
+	case "F":
+		semitone = 5
+	case "F#", "Gb":
+		semitone = 6
+	case "G":
+		semitone = 7
+	case "G#", "Ab":
+		semitone = 8
+	case "A":
+		semitone = 9
+	case "A#", "Bb":
+		semitone = 10
+	case "B", "H":
+		semitone = 11
+	case "Hb":
+		semitone = 10
+	default:
+		return 0, fmt.Errorf("invalid base: %q", base+accidental)
+	}
+
+	midiNote := 12*(octave+1) + semitone
+
+	if midiNote < 0 || midiNote > 127 {
+		return 0, fmt.Errorf("note out of MIDI range: %q", s)
+	}
+
+	return midi.Note(midiNote), nil
+}
 
 // Note names for the supported sharp and flat formats.
 var noteNames = map[byte][12]string{

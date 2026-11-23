@@ -5,10 +5,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"regexp"
 	"slices"
-	"strconv"
-	"strings"
 
 	"github.com/SladkyCitron/gotau/pitch"
 	"gitlab.com/gomidi/midi/v2"
@@ -107,7 +104,7 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 			return nil, fmt.Errorf("voicebank prefix.map: invalid line: %q", line)
 		}
 
-		note, err := parseNote(string(bytes.TrimSpace(parts[0])))
+		note, err := pitch.ParseNote(string(bytes.TrimSpace(parts[0])))
 		if err != nil {
 			return nil, fmt.Errorf("voicebank prefix.map: invalid note %q: %w", parts[0], err)
 		}
@@ -122,66 +119,6 @@ func ParsePrefixMap(data []byte, opts ...PrefixMapOption) (PrefixMap, error) {
 		}
 	}
 	return prefixMap, nil
-}
-
-// we use A-H to support German notation; H means B natural
-// https://en.wikipedia.org/wiki/Musical_note#B%E2%99%AD,_B_and_H
-
-var noteRe = regexp.MustCompile(`(?i)^([A-H])([#b])?(-?\d+)$`)
-
-func parseNote(s string) (midi.Note, error) {
-	m := noteRe.FindStringSubmatch(s)
-	if m == nil {
-		return 0, fmt.Errorf("invalid note format: %q", s)
-	}
-
-	base := strings.ToUpper(m[1])
-	accidental := strings.ToLower(m[2])
-	octave, err := strconv.Atoi(m[3])
-	if err != nil {
-		return 0, fmt.Errorf("invalid octave: %q", m[3])
-	}
-
-	var semitone int
-
-	switch base + accidental {
-	case "C":
-		semitone = 0
-	case "C#", "Db":
-		semitone = 1
-	case "D":
-		semitone = 2
-	case "D#", "Eb":
-		semitone = 3
-	case "E":
-		semitone = 4
-	case "F":
-		semitone = 5
-	case "F#", "Gb":
-		semitone = 6
-	case "G":
-		semitone = 7
-	case "G#", "Ab":
-		semitone = 8
-	case "A":
-		semitone = 9
-	case "A#", "Bb":
-		semitone = 10
-	case "B", "H":
-		semitone = 11
-	case "Hb":
-		semitone = 10
-	default:
-		return 0, fmt.Errorf("invalid base: %q", base+accidental)
-	}
-
-	midiNote := 12*(octave+1) + semitone
-
-	if midiNote < 0 || midiNote > 127 {
-		return 0, fmt.Errorf("note out of MIDI range: %q", s)
-	}
-
-	return midi.Note(midiNote), nil
 }
 
 // Encode encodes and writes the prefixes to the provided [io.Writer].
