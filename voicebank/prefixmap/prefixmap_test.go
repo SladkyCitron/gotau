@@ -3,6 +3,7 @@ package prefixmap_test
 import (
 	"bytes"
 	"cmp"
+	"maps"
 	"testing"
 
 	"github.com/SladkyCitron/gotau/voicebank/prefixmap"
@@ -112,4 +113,42 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	assert.Equal(t, want, buf.Bytes())
+}
+
+func FuzzParse(f *testing.F) {
+	for _, seed := range []string{
+		"C5\tpre\tsuf\nD#5\tpre\t\nF#5\t\tsuf\n",
+		"C5 pre suf\nD#5 pre \nF#5  suf\n",                  // different delimiter
+		"C5\tpre\tsuf\nC5\tpre\tsuf\n",                      // duplicate note
+		"C999999999999999999999999\tpre\tsuf\n",             // invalid octave
+		"C5\t\tsuf\n",                                       // missing prefix
+		"C5\tpre\n",                                         // missing suffix
+		"C5\tpre\tsuf\textra\n",                             // extra field
+		"C5\tpre\tsuf\n# comment\nD#5\tpre\t\nF#5\t\tsuf\n", // comment line
+		"", // empty string
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, s string) {
+		pm, err := prefixmap.Parse([]byte(s))
+		if err != nil {
+			return
+		}
+
+		var buf bytes.Buffer
+		err = pm.Encode(&buf)
+		if err != nil {
+			t.Fatalf("failed to encode prefix.map: %v", err)
+		}
+
+		roundTrip, err := prefixmap.Parse(buf.Bytes())
+		if err != nil {
+			t.Fatalf("failed to parse encoded prefix.map: %v", err)
+		}
+
+		if !maps.Equal(pm, roundTrip) {
+			t.Fatalf("round-trip failed: got %v, want %v", roundTrip, pm)
+		}
+	})
 }
