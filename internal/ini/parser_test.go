@@ -193,6 +193,45 @@ func TestParseErrors(t *testing.T) {
 	}
 }
 
+func FuzzParse(f *testing.F) {
+	for _, seed := range []string{
+		"",
+		"key=value",
+		"[section]\nkey=value\n",
+		"; comment\nkey = \"value\"\n",
+		"[raw]\r\n first line \r\nsecond line\r\n",
+		"[section",
+		"[]",
+		"[nested[section]]",
+		"=value",
+		"key = \"unterminated",
+		"key = \"\\q\"",
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, data string) {
+		doc, err := ini.Parse([]byte(data), ini.ParseOptions{
+			CommentPrefix:             ";",
+			UnparseableSections:       []string{"raw"},
+			UnescapeValueDoubleQuotes: true,
+		})
+		if err != nil {
+			return
+		}
+
+		if doc == nil {
+			t.Fatal("Parse returned a nil document without an error")
+		}
+		if len(doc.Sections) == 0 {
+			t.Fatal("Parse returned a document without a default section")
+		}
+		if doc.GetDefaultSection() == nil {
+			t.Fatal("Parse returned a document without a default section")
+		}
+	})
+}
+
 func BenchmarkParse(b *testing.B) {
 	data := []byte(`
 ; This is a comment
