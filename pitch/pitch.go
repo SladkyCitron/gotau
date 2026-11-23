@@ -15,6 +15,10 @@ import (
 
 var noteRe = regexp.MustCompile(`(?i)^([A-H])([#b])?(-?\d+)$`)
 
+// ParseNote parses a note string (e.g., "C#4", "Db3", "A5") into a MIDI note number.
+// It supports, sharp (#) and flat (b) notation, German notation (H for B natural),
+// as well as octave numbers.
+// The octave number is expected to be an integer, where C4 is middle C (MIDI note 60).
 func ParseNote(s string) (midi.Note, error) {
 	m := noteRe.FindStringSubmatch(s)
 	if m == nil {
