@@ -10,7 +10,7 @@ import (
 	"golang.org/x/text/encoding/japanese"
 )
 
-func TestDecodeOto(t *testing.T) {
+func TestParse(t *testing.T) {
 	src := []byte(`; example oto.ini for parser tests
 a.wav=a,0,120,-39,80,20
 shi.wav=し,10,90,-200,70,25
@@ -34,7 +34,7 @@ empty_values.wav=a,,,,,
 	assert.Equal(t, want, oto)
 }
 
-func TestDecodeOtoShiftJIS(t *testing.T) {
+func TestParseShiftJIS(t *testing.T) {
 	src := []byte("shi.wav=\x82\xb5,10,90,-200,70,25\nka.wav=\x82\xa9,50,100,-300,90,30\n\x82\xa0.wav=\x82\xa0,39,110,-250,85,40\n")
 
 	want := otoini.Oto{
@@ -51,7 +51,7 @@ func TestDecodeOtoShiftJIS(t *testing.T) {
 	assert.Equal(t, want, oto)
 }
 
-func TestDecodeOtoInvalid(t *testing.T) {
+func TestParseInvalid(t *testing.T) {
 	src := []byte("invalid_entry.wav=a,\n")
 
 	oto, err := otoini.Parse(src)
@@ -59,7 +59,7 @@ func TestDecodeOtoInvalid(t *testing.T) {
 	assert.Empty(t, oto)
 }
 
-func TestDecodeOtoMissingEqualSign(t *testing.T) {
+func TestParseMissingEqualSign(t *testing.T) {
 	src := []byte("invalid_entry.wav\n")
 
 	oto, err := otoini.Parse(src)
@@ -67,7 +67,7 @@ func TestDecodeOtoMissingEqualSign(t *testing.T) {
 	assert.Empty(t, oto)
 }
 
-func TestOtoGet(t *testing.T) {
+func TestOto_Get(t *testing.T) {
 	oto := otoini.Oto{
 		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
 		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
@@ -85,7 +85,7 @@ func TestOtoGet(t *testing.T) {
 	assert.Empty(t, entry)
 }
 
-func TestOtoEncode(t *testing.T) {
+func TestOto_Encode(t *testing.T) {
 	oto := otoini.Oto{
 		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
 		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
@@ -106,7 +106,7 @@ ka.wav=か,50,100,-300,90,30
 	assert.Equal(t, want, buf.Bytes())
 }
 
-func TestOtoEncodeWithPrecision(t *testing.T) {
+func TestOto_EncodeWithPrecision(t *testing.T) {
 	oto := otoini.Oto{
 		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
 		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
@@ -127,7 +127,7 @@ ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 	assert.Equal(t, want, buf.Bytes())
 }
 
-func TestOtoRoundTrip(t *testing.T) {
+func TestRoundTrip(t *testing.T) {
 	src := []byte(`a.wav=a,0.000,120.000,-39.000,80.000,20.000
 shi.wav=し,10.000,90.000,-200.000,70.000,25.000
 ka.wav=か,50.000,100.000,-300.000,90.000,30.000
@@ -148,7 +148,7 @@ ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 	assert.Equal(t, src, buf.Bytes())
 }
 
-func BenchmarkOtoEncode(b *testing.B) {
+func BenchmarkOto_Encode(b *testing.B) {
 	oto := otoini.Oto{
 		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
