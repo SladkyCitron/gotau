@@ -46,6 +46,52 @@ func TestParseNoteInvalid(t *testing.T) {
 	}
 }
 
+func FuzzParseNote(f *testing.F) {
+	for _, seed := range []string{
+		"C4",
+		"C#4",
+		"Db3",
+		"H4",
+		"Hb4",
+		"",
+		"C",
+		"C##5",
+		"C5extra",
+		"C 5",
+		"I5",
+		"Cb5",
+		"H#5",
+		"C-1",
+		"C11",
+		"C999999999999999999999999",
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, s string) {
+		note, err := pitch.ParseNote(s)
+		if err != nil {
+			return
+		}
+		if note < 12 {
+			return
+		}
+
+		var fmt byte = 's'
+		if s != "" && (s[1] == 'b' || s[1] == 'B') {
+			fmt = 'f'
+		}
+		formatted := pitch.FormatNote(note, fmt)
+		roundTrip, err := pitch.ParseNote(formatted)
+		if err != nil {
+			t.Fatalf("formatted note %q could not be parsed: %v", formatted, err)
+		}
+		if roundTrip != note {
+			t.Fatalf("note %q formatted as %q and parsed as %d, want %d", s, formatted, roundTrip, note)
+		}
+	})
+}
+
 func TestEncodeResamplerPitchBendString(t *testing.T) {
 	tests := []struct {
 		name string
