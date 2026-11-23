@@ -20,6 +20,7 @@ import (
 	"github.com/SladkyCitron/gotau/umath"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"github.com/SladkyCitron/gotau/voicebank/otoini"
+	"github.com/SladkyCitron/gotau/voicebank/prefixmap"
 	"github.com/SladkyCitron/resona/afmt"
 	"github.com/SladkyCitron/resona/aio"
 	"github.com/SladkyCitron/resona/codec"
@@ -183,7 +184,7 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 	if next != nil {
 		nextPhonemes := slices.Collect(s.ph.Phonemize([]phonemizer.Note{*phNext}, &phNotes[0], nil))
 		if len(nextPhonemes) > 0 {
-			var nextPrefix voicebank.Prefix
+			var nextPrefix prefixmap.Prefix
 			if s.vb.PrefixMap != nil {
 				if entry, ok := s.vb.PrefixMap[phNext.Note]; ok {
 					nextPrefix = entry
@@ -199,7 +200,7 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 	for ph := range s.ph.Phonemize(phNotes, phPrev, phNext) {
 		targetNote := phNotes[ph.Index]
 
-		var prefix voicebank.Prefix
+		var prefix prefixmap.Prefix
 		if s.vb.PrefixMap != nil {
 			if entry, ok := s.vb.PrefixMap[targetNote.Note]; ok {
 				prefix = entry
@@ -436,7 +437,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 	return nil
 }
 
-func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (e otoini.Entry, ok bool) {
+func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix prefixmap.Prefix) (e otoini.Entry, ok bool) {
 	if ph.Error != nil {
 		// log error??
 		return otoini.Entry{}, false
