@@ -89,7 +89,7 @@ func TestDecodePrefixMapAllNotes(t *testing.T) {
 func TestDecodePrefixMapInvalidLine(t *testing.T) {
 	prefixmap, err := prefixmap.Parse([]byte("C#5\tfoo\n"))
 	assert.Nil(t, prefixmap)
-	assert.ErrorContains(t, err, "voicebank prefix.map: invalid line")
+	assert.ErrorContains(t, err, "prefixmap Parse: invalid line")
 }
 
 func TestPrefixMapRoundTrip(t *testing.T) {

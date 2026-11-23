@@ -89,7 +89,7 @@ func Parse(data []byte, opts ...Option) (PrefixMap, error) {
 
 	newData, err := cfg.encoding.NewDecoder().Bytes(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode prefix.map: %w", err)
+		return nil, fmt.Errorf("prefixmap Parse: failed to decode prefix.map: %w", err)
 	}
 
 	prefixMap := make(PrefixMap)
@@ -101,16 +101,16 @@ func Parse(data []byte, opts ...Option) (PrefixMap, error) {
 
 		parts := bytes.SplitN(line, []byte(string(cfg.delimiter)), 3)
 		if len(parts) < 3 {
-			return nil, fmt.Errorf("voicebank prefix.map: invalid line: %q", line)
+			return nil, fmt.Errorf("prefixmap Parse: invalid line: %q", line)
 		}
 
 		note, err := pitch.ParseNote(string(bytes.TrimSpace(parts[0])))
 		if err != nil {
-			return nil, fmt.Errorf("voicebank prefix.map: invalid note %q: %w", parts[0], err)
+			return nil, fmt.Errorf("prefixmap Parse: invalid note %q: %w", parts[0], err)
 		}
 
 		if _, exists := prefixMap[note]; exists {
-			return nil, fmt.Errorf("voicebank prefix.map: duplicate note %q", parts[0])
+			return nil, fmt.Errorf("prefixmap Parse: duplicate note %q", parts[0])
 		}
 
 		prefixMap[note] = Prefix{
@@ -145,7 +145,7 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...Option) error {
 			// *transform.Writer implements io.Closer so this is safe to do without the ok check
 			closer := newWriter.(io.Closer)
 			if err := closer.Close(); err != nil {
-				panic(fmt.Errorf("failed to close prefix.map writer: %w", err))
+				panic(fmt.Errorf("prefixmap Encode: failed to close writer: %w", err))
 			}
 		}()
 	}
@@ -170,7 +170,7 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...Option) error {
 		buf.WriteByte(10) // newline
 
 		if _, err := buf.WriteTo(newWriter); err != nil {
-			return fmt.Errorf("failed to write prefix.map entry for note %s: %w", note.String(), err)
+			return fmt.Errorf("prefixmap Encode: failed to write entry for note %s: %w", note.String(), err)
 		}
 	}
 
