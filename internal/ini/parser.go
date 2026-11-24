@@ -17,8 +17,8 @@ type ParseOptions struct {
 	// PreserveValueWhitespace prevents trimming whitespace from entry values.
 	PreserveValueWhitespace bool
 
-	// ResolveQuotes indicates whether to resolve quoted values.
-	ResolveQuotes bool
+	// PreserveQuotes indicates whether to preserve surrounding quotes in values.
+	PreserveQuotes bool
 
 	// UnescapeValueDoubleQuotes indicates whether to unescape double quotes inside value
 	// to regular format when value is surrounded by double quotes.
@@ -52,7 +52,6 @@ func Parse(data []byte, opts ...ParseOptions) (*Document, error) {
 	}
 	return parseWithOptions(data, ParseOptions{
 		CommentPrefix: ";",
-		ResolveQuotes: true,
 	})
 }
 
@@ -150,7 +149,7 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 			}
 		}
 
-		if !opts.ResolveQuotes {
+		if opts.PreserveQuotes {
 			curSection.Entries = append(curSection.Entries, Entry{Key: string(key), Value: string(value)})
 			continue
 		}

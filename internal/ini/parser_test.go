@@ -115,6 +115,17 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "quoted values are preserved when requested",
+			data: []byte(`value = "quoted value"`),
+			opts: ini.ParseOptions{PreserveQuotes: true},
+			want: &ini.Document{
+				Sections: []ini.Section{{
+					Name:    "",
+					Entries: []ini.Entry{{Key: "value", Value: `"quoted value"`}},
+				}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

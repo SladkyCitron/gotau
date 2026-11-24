@@ -114,7 +114,7 @@ func Parse(data []byte, opts ...Option) (Oto, error) {
 	iniDoc, err := ini.Parse(newData, ini.ParseOptions{
 		CommentPrefix:           string(cfg.comment),
 		PreserveValueWhitespace: true,
-		ResolveQuotes:           false,
+		PreserveQuotes:          true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse oto.ini: %w", err)
