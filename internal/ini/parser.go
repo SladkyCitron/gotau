@@ -52,6 +52,7 @@ func Parse(data []byte, opts ...ParseOptions) (*Document, error) {
 	}
 	return parseWithOptions(data, ParseOptions{
 		CommentPrefix: ";",
+		ResolveQuotes: true,
 	})
 }
 
