@@ -125,6 +125,8 @@ Do not assume that:
 
 Reproduce behavior when evidence justifies it, not simply because a reference implementation happens to do it.
 
+If present, you may reference the OpenUtau source code from a local clone of the repository (`OpenUtau/`, `_OpenUtau/`, `.OpenUtau/`, etc.) rather than looking up the online repository. If not present, search the OpenUtau source code online.
+
 ## Go implementation principles
 
 Prefer idiomatic, maintainable Go.
