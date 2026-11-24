@@ -149,6 +149,27 @@ ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 	assert.Equal(t, src, buf.Bytes())
 }
 
+func TestRoundTripWhitespaceAlias(t *testing.T) {
+	src := []byte(`0=" ,,,,,"`)
+
+	oto, err := otoini.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	if err := oto.Encode(&buf); err != nil {
+		t.Fatal(err)
+	}
+
+	roundTrip, err := otoini.Parse(buf.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, oto, roundTrip)
+}
+
 func FuzzParse(f *testing.F) {
 	for _, seed := range []string{
 		`a.wav=a,0,120,-39,80,20`,

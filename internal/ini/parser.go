@@ -14,6 +14,9 @@ type ParseOptions struct {
 	// If set to an empty string, comments will not be recognized.
 	CommentPrefix string
 
+	// PreserveValueWhitespace prevents trimming whitespace from entry values.
+	PreserveValueWhitespace bool
+
 	// UnparseableSections specifies the names of sections that cannot not be parsed correctly.
 	// If a section name is included in this list, its content will be stored as raw text
 	// in the [Section.Raw] field instead of being parsed into key-value pairs.
@@ -131,7 +134,9 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 		}
 
 		key = bytes.TrimSpace(key)
-		value = bytes.TrimSpace(value)
+		if !opts.PreserveValueWhitespace {
+			value = bytes.TrimSpace(value)
+		}
 
 		if len(key) == 0 {
 			return nil, &ParseError{
@@ -141,27 +146,32 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 			}
 		}
 
-		if len(value) > 0 && value[0] == '"' {
-			if len(value) < 2 || value[len(value)-1] != '"' {
+		quotedValue := value
+		if opts.PreserveValueWhitespace {
+			quotedValue = bytes.TrimSpace(value)
+		}
+
+		if len(quotedValue) > 0 && quotedValue[0] == '"' {
+			if len(quotedValue) < 2 || quotedValue[len(quotedValue)-1] != '"' {
 				return nil, &ParseError{
 					Line:   lineNum,
-					Column: len(origLine) - len(value) + 1,
+					Column: len(origLine) - len(quotedValue) + 1,
 					Err:    "unterminated quoted value",
 				}
 			}
 
 			if opts.UnescapeValueDoubleQuotes {
-				_value, err := strconv.Unquote(string(value))
+				_value, err := strconv.Unquote(string(quotedValue))
 				if err != nil {
 					return nil, &ParseError{
 						Line:   lineNum,
-						Column: len(origLine) - len(value) + 1,
+						Column: len(origLine) - len(quotedValue) + 1,
 						Err:    fmt.Errorf("invalid quoted string: %w", err).Error(),
 					}
 				}
 				value = []byte(_value)
 			} else {
-				value = bytes.TrimPrefix(value, []byte{'"'})
+				value = bytes.TrimPrefix(quotedValue, []byte{'"'})
 				value = bytes.TrimSuffix(value, []byte{'"'})
 			}
 		}
