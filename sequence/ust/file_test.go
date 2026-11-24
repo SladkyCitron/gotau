@@ -33,9 +33,9 @@ func TestFile_SequenceMode1PitchBend(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, seq.Notes, 1)
 	assert.Len(t, seq.Notes[0].PitchBend, 3)
-	assert.InDelta(t, -10, seq.Notes[0].PitchBend[0].X, 1e-12)
-	assert.InDelta(t, -10+500.0/96, seq.Notes[0].PitchBend[1].X, 1e-12)
-	assert.InDelta(t, -10+2*500.0/96, seq.Notes[0].PitchBend[2].X, 1e-12)
+	assert.InDelta(t, -10*500.0/480, seq.Notes[0].PitchBend[0].X, 1e-12)
+	assert.InDelta(t, -5*500.0/480, seq.Notes[0].PitchBend[1].X, 1e-12)
+	assert.InDelta(t, 0, seq.Notes[0].PitchBend[2].X, 1e-12)
 	assert.Equal(t, []float64{0, 100, -50}, []float64{
 		seq.Notes[0].PitchBend[0].Y,
 		seq.Notes[0].PitchBend[1].Y,
@@ -176,10 +176,25 @@ func TestFile_SequenceMode2PitchBend(t *testing.T) {
 
 	got, err := file.Sequence()
 	assert.NoError(t, err)
-	assert.Equal(t, umath.Curve{
-		{X: -40, Y: -20, Interp: umath.CurveInterpolationSineInOut},
-		{X: 25, Y: 0, Interp: umath.CurveInterpolationLinear},
-		{X: 94, Y: 420, Interp: umath.CurveInterpolationSineInOut},
-		{X: 460, Y: 420},
-	}, got.Notes[0].PitchBend)
+	assert.Equal(t, []umath.CurveInterpolation{
+		umath.CurveInterpolationSineInOut,
+		umath.CurveInterpolationLinear,
+		umath.CurveInterpolationSineInOut,
+		umath.CurveInterpolationLinear,
+	}, []umath.CurveInterpolation{
+		got.Notes[0].PitchBend[0].Interp,
+		got.Notes[0].PitchBend[1].Interp,
+		got.Notes[0].PitchBend[2].Interp,
+		got.Notes[0].PitchBend[3].Interp,
+	})
+	assert.InDelta(t, -40*500.0/480, got.Notes[0].PitchBend[0].X, 1e-12)
+	assert.InDelta(t, 25*500.0/480, got.Notes[0].PitchBend[1].X, 1e-12)
+	assert.InDelta(t, 94*500.0/480, got.Notes[0].PitchBend[2].X, 1e-12)
+	assert.InDelta(t, (-40+480)*500.0/480, got.Notes[0].PitchBend[3].X, 1e-12)
+	assert.Equal(t, []float64{-20, 0, 420, 420}, []float64{
+		got.Notes[0].PitchBend[0].Y,
+		got.Notes[0].PitchBend[1].Y,
+		got.Notes[0].PitchBend[2].Y,
+		got.Notes[0].PitchBend[3].Y,
+	})
 }

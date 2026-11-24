@@ -103,11 +103,15 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs, mode1StepMs float64)
 	if pb == nil {
 		return umath.Curve{}
 	}
+	// UST pitch-bend positions and widths are measured in ticks. The sequence
+	// curve uses milliseconds, so derive the per-tick duration from the Mode 1
+	// five-tick sample interval.
+	tickMs := mode1StepMs / 5
 	if !mode2 && len(pb.Pitches) > 0 {
 		points := make(umath.Curve, 0, len(pb.Pitches))
 		for i, pitch := range pb.Pitches {
 			points = append(points, umath.CurvePoint{
-				X:      pb.Start.X + float64(i)*mode1StepMs,
+				X:      (pb.Start.X + float64(i)*5) * tickMs,
 				Y:      pitch,
 				Interp: umath.CurveInterpolationLinear,
 			})
@@ -152,7 +156,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs, mode1StepMs float64)
 	}
 
 	// Mode2
-	x := pb.Start.X
+	x := pb.Start.X * tickMs
 	y := pb.Start.Y
 	var firstMode PitchBendMode
 	if len(pb.Modes) > 0 {
@@ -164,7 +168,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs, mode1StepMs float64)
 		Interp: convertPBM(firstMode),
 	})
 	for i := range pb.Widths {
-		x += pb.Widths[i]
+		x += pb.Widths[i] * tickMs
 		if i < len(pb.Ys) {
 			y = pb.Ys[i]
 		}
@@ -181,7 +185,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs, mode1StepMs float64)
 
 	// final point
 	points = append(points, umath.CurvePoint{
-		X: pb.Start.X + noteDurMs,
+		X: pb.Start.X*tickMs + noteDurMs,
 		Y: y * 10, // convert deci-semitones to cents
 	})
 
