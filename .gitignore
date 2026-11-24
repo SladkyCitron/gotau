@@ -23,4 +23,8 @@ go.work
 # CPU profiles
 cpu.prof
 
+# Temporary test file
 output.wav
+
+# OpenUtau local copy
+.agents/skills/utau-engineering/references/OpenUtau
