@@ -17,14 +17,17 @@ type ParseOptions struct {
 	// PreserveValueWhitespace prevents trimming whitespace from entry values.
 	PreserveValueWhitespace bool
 
-	// UnparseableSections specifies the names of sections that cannot not be parsed correctly.
-	// If a section name is included in this list, its content will be stored as raw text
-	// in the [Section.Raw] field instead of being parsed into key-value pairs.
-	UnparseableSections []string
+	// ResolveQuotes indicates whether to resolve quoted values.
+	ResolveQuotes bool
 
 	// UnescapeValueDoubleQuotes indicates whether to unescape double quotes inside value
 	// to regular format when value is surrounded by double quotes.
 	UnescapeValueDoubleQuotes bool
+
+	// UnparseableSections specifies the names of sections that cannot not be parsed correctly.
+	// If a section name is included in this list, its content will be stored as raw text
+	// in the [Section.Raw] field instead of being parsed into key-value pairs.
+	UnparseableSections []string
 }
 
 type ParseError struct {
@@ -144,6 +147,11 @@ func parseWithOptions(data []byte, opts ParseOptions) (*Document, error) {
 				Column: 1,
 				Err:    "empty key",
 			}
+		}
+
+		if !opts.ResolveQuotes {
+			curSection.Entries = append(curSection.Entries, Entry{Key: string(key), Value: string(value)})
+			continue
 		}
 
 		quotedValue := value
