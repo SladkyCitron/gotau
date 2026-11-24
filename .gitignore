@@ -28,3 +28,9 @@ output.wav
 
 # OpenUtau local copy
 .agents/skills/utau-engineering/references/OpenUtau
+
+# utsu local copy
+.agents/skills/utau-engineering/references/utsu
+
+# UtauTTS local copy
+.agents/skills/utau-engineering/references/UtauTTS

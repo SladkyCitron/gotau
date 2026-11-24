@@ -6,7 +6,7 @@ disable-model-invocation: false
 
 # UTAU Engineering
 
-Help develop a modern UTAU-compatible singing voice synthesizer in Go, using classic UTAU as the primary compatibility target and OpenUtau's C# implementation as a secondary reference.
+Help develop a modern UTAU-compatible singing voice synthesizer in Go, using classic UTAU and UTAU documentation as the primary compatibility target, OpenUtau's C# implementation as a secondary reference, and other UTAU-compatible implementations as tertiary references.
 
 The long-term goal is a maintainable, idiomatic Go synthesizer that preserves classic UTAU behavior where compatibility requires it, while allowing modern internal architecture and future improvements.
 
@@ -74,6 +74,7 @@ Use combinations of terms appropriate to the question, including:
 - `UTAU 原音設定`
 - `UTAU oto.ini`
 - `UTAU UST`
+- `UTAU USTX`
 - `UTAU エンジン`
 - `UTAU resampler`
 - `UTAU wavtool`
@@ -99,9 +100,12 @@ For each useful source:
 
 If a technical Japanese term has multiple plausible meanings, retain the original term until its meaning is established.
 
-## Using OpenUtau as a reference implementation
+## Using other projects as reference implementations
 
 Use OpenUtau's C# code to discover algorithms, data structures, compatibility handling, and edge cases.
+If present, you may reference the OpenUtau source code from a local clone of the repository rather than looking up the online repository. If not present, search the OpenUtau source code online.
+
+If present, you may reference other UTAU-compatible implementations (utsu, UtauTTS, etc.), resamplers, wavtools, or plugins to understand or troubleshoot a particular algorithm or behavior from a local clone of the repository or by looking up the online repository.
 
 When investigating a feature:
 
@@ -125,8 +129,6 @@ Do not assume that:
 
 Reproduce behavior when evidence justifies it, not simply because a reference implementation happens to do it.
 
-If present, you may reference the OpenUtau source code from a local clone of the repository (`OpenUtau/`, `_OpenUtau/`, `.OpenUtau/`, etc.) rather than looking up the online repository. If not present, search the OpenUtau source code online.
-
 ## Go implementation principles
 
 Prefer idiomatic, maintainable Go.
@@ -142,7 +144,7 @@ Prefer idiomatic, maintainable Go.
 - Profile before optimizing. Use benchmarks to verify performance improvements.
 - Avoid introducing dependencies without a clear benefit.
 
-Do not translate C# into Go mechanically. Preserve the relevant semantics while using appropriate Go data structures and control flow.
+Do not translate code written in another language into Go mechanically. Preserve the relevant semantics while using appropriate Go data structures and control flow.
 
 ## Synthesis engine investigation
 
