@@ -6,7 +6,7 @@ disable-model-invocation: false
 
 # UTAU Engineering
 
-Help develop a modern UTAU-compatible singing voice synthesizer in Go, using classic UTAU and UTAU documentation as the primary compatibility target, OpenUtau's C# implementation as a secondary reference, and other UTAU-compatible implementations as tertiary references.
+Help develop a modern UTAU-compatible singing voice synthesizer in Go, using classic UTAU and UTAU documentation as the primary compatibility target, other implementations (e.g. OpenUtau) as a secondary reference, and other UTAU-compatible implementations as tertiary references.
 
 The long-term goal is a maintainable, idiomatic Go synthesizer that preserves classic UTAU behavior where compatibility requires it, while allowing modern internal architecture and future improvements.
 
@@ -48,13 +48,9 @@ Prioritize:
 1. Reproducible observations from classic UTAU or its original tools, with the environment and inputs documented.
 2. Contemporary documentation, original distribution files, format specifications, and historical Japanese community sources.
 3. Archived versions of relevant documentation or websites.
-4. OpenUtau source code as evidence of a particular implementation's behavior.
+4. Source code of other implementations (e.g. OpenUtau) as evidence of a particular implementation's behavior.
 5. Later explanations, recollections, and secondary sources.
 6. Inference from naming, conventions, or incomplete examples.
-
-### Current OpenUtau behavior
-
-Prioritize the actual checked-out source revision, relevant tests, and executable behavior. Record the repository revision when findings depend on implementation details.
 
 ### General engineering decisions
 
