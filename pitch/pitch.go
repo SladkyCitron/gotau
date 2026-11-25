@@ -119,7 +119,7 @@ func EncodeResamplerPitchBendString(x []float64) string {
 	runTmp := make([]byte, 0, 8) // scratch buffer for run length
 
 	for i := range x {
-		num := int16(math.Round(x[i]))
+		num := quantizePitch(x[i])
 		if num == last {
 			run++
 			continue
@@ -145,6 +145,17 @@ func EncodeResamplerPitchBendString(x []float64) string {
 	}
 
 	return buf.String()
+}
+
+func quantizePitch(v float64) int16 {
+	if math.IsNaN(v) {
+		return 0
+	}
+
+	v = math.Round(v)
+	v = math.Max(-2048, math.Min(2047, v))
+
+	return int16(v)
 }
 
 const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
