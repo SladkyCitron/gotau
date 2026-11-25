@@ -73,10 +73,6 @@ jobs:
             -coverprofile=coverage.out \
             ./...
 
-      - name: Display coverage
-        if: always() && hashFiles('coverage.out') != ''
-        run: go tool cover -func=coverage.out
-
       - name: Publish test results
         if: always() && hashFiles('test-results/tests.json') != ''
         uses: dorny/test-reporter@v3
@@ -84,3 +80,10 @@ jobs:
           name: Go Tests
           path: test-results/tests.json
           reporter: golang-json
+
+      - name: Publish coverage
+        if: always() && hashFiles('coverage.out') != ''
+        run: |
+          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
+          echo "## Test Coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total coverage:** $coverage" >> "$GITHUB_STEP_SUMMARY"
