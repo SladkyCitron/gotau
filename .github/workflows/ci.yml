@@ -1,29 +1,86 @@
-name: CI (Go)
+name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
+    name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-    - name: Set up Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: "go.mod"
-    
-    - name: Install dependencies
-      run: |
-        go mod tidy
-        go mod download
-    
-    - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v9
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
 
-    - name: Run tests
-      run: go test -v ./...
+      - name: Download dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Check module files
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0
+
+      - name: Run tests
+        run: |
+          mkdir -p test-results
+          gotestsum \
+            --format testname \
+            --jsonfile test-results/tests.json \
+            -- \
+            -race \
+            -coverprofile=coverage.out \
+            ./...
+
+      - name: Display coverage
+        if: always() && hashFiles('coverage.out') != ''
+        run: go tool cover -func=coverage.out
+
+      - name: Publish test results
+        if: always() && hashFiles('test-results/tests.json') != ''
+        uses: dorny/test-reporter@v3
+        with:
+          name: Go Tests
+          path: test-results/tests.json
+          reporter: golang-json
