@@ -260,25 +260,10 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 	timing := CalculateResamplerTiming(otoEntry, note, durationMs, preutterMs, next, nextPreutterMs, nextOverlap)
 	pitchLeadingMs := timing.Leading
 
-	// generate pitch bend curve
-	// the timing math is probably wrong, thus the NaNs
-	// also we'll probably need to lerp the pitches with the previous ones and also crossfade them with the prev note's ones
+	// Generate the pitch bend curve from the resampler output start.
 	const pitchIntervalTicks = 5
-	positionMs := s.sched.ticksToSeconds(note.Position) * 1000
-	pitchCountMs := (positionMs + timing.Length) - (positionMs - pitchLeadingMs)
-	pitchCount := int(math.Ceil(float64(s.sched.secondsToTicks(pitchCountMs/1000)) / 5))
-	pitchCount = max(0, pitchCount)
-	pitchBend := make([]float64, pitchCount)
-	pitchSampleStartMs := positionMs - pitchLeadingMs
 	pitchIntervalMs := s.sched.ticksToSeconds(pitchIntervalTicks) * 1000
-	for i := range pitchBend {
-		samplePosMs := pitchSampleStartMs + float64(i)*pitchIntervalMs
-		pitch := note.PitchBend.AtClamped(samplePosMs - positionMs)
-		if math.IsNaN(pitch) {
-			pitch = 0
-		}
-		pitchBend[i] = pitch
-	}
+	pitchBend := samplePitchBend(note.PitchBend, pitchLeadingMs, timing.Length, pitchIntervalMs)
 
 	resampleCfg := resampler.ResampleConfig{
 		Pitch:       note.Note,
@@ -435,6 +420,19 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, next
 	}
 
 	return nil
+}
+
+func samplePitchBend(curve umath.Curve, leadingMs, lengthMs, intervalMs float64) []float64 {
+	count := max(0, int(math.Ceil(lengthMs/intervalMs)))
+	pitchBend := make([]float64, count)
+	for i := range pitchBend {
+		pitch := curve.AtClamped(float64(i)*intervalMs - leadingMs)
+		if math.IsNaN(pitch) {
+			pitch = 0
+		}
+		pitchBend[i] = pitch
+	}
+	return pitchBend
 }
 
 func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix prefixmap.Prefix) (e otoini.Entry, ok bool) {
